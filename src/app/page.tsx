@@ -1,6 +1,7 @@
+
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { UserProfile } from '@/lib/types';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 import { Navbar } from '@/components/dashboard/Navbar';
@@ -8,52 +9,60 @@ import { Home } from '@/components/dashboard/Home';
 import { Vault } from '@/components/dashboard/Vault';
 import { Profile } from '@/components/dashboard/Profile';
 import { Button } from '@/components/ui/button';
-import { Shield, Sparkles } from 'lucide-react';
-
-const STORAGE_KEY = 'sabapplier_vault_session';
+import { Shield, Sparkles, Loader2 } from 'lucide-react';
+import { 
+  useAuth, 
+  useUser, 
+  useDoc, 
+  useFirestore 
+} from '@/firebase';
+import { 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signOut 
+} from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 export default function App() {
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const { auth } = useAuth();
+  const { user: authUser, loading: authLoading } = useUser();
+  const db = useFirestore();
   const [activeTab, setActiveTab] = useState<'home' | 'documents' | 'sharing' | 'profile'>('home');
-  const [isLoaded, setIsLoaded] = useState(false);
 
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        setUser(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to parse session');
-      }
+  // Fetch or initialize user profile from Firestore
+  const { data: profile, loading: profileLoading } = useDoc<UserProfile>(
+    authUser ? doc(db!, 'users', authUser.uid) : null
+  );
+
+  const handleLogin = async () => {
+    if (!auth) return;
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("Login failed", error);
     }
-    setIsLoaded(true);
-  }, []);
+  };
+
+  const handleLogout = async () => {
+    if (!auth) return;
+    await signOut(auth);
+  };
 
   const saveUser = (updated: UserProfile) => {
-    setUser(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    if (!db || !authUser) return;
+    setDoc(doc(db, 'users', authUser.uid), updated, { merge: true });
   };
 
-  const handleLogin = () => {
-    const newUser: UserProfile = {
-      email: 'john.doe@example.com',
-      fullName: 'John Doe',
-      onboardingComplete: false,
-      onboardingStep: 1,
-      professions: [],
-      documents: {}
-    };
-    saveUser(newUser);
-  };
+  if (authLoading || (authUser && profileLoading)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+      </div>
+    );
+  }
 
-  const handleLogout = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    setUser(null);
-  };
-
-  if (!isLoaded) return null;
-
-  if (!user) {
+  if (!authUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/50 p-6">
         <div className="max-w-md w-full bg-white rounded-[3rem] p-12 shadow-2xl border border-white text-center space-y-8">
@@ -83,23 +92,41 @@ export default function App() {
     );
   }
 
-  if (!user.onboardingComplete) {
-    return <OnboardingWizard user={user} saveUser={saveUser} />;
+  // Create initial profile if it doesn't exist
+  if (!profile) {
+    const initialProfile: UserProfile = {
+      email: authUser.email || '',
+      fullName: authUser.displayName || 'Anonymous User',
+      onboardingComplete: false,
+      onboardingStep: 1,
+      professions: [],
+      documents: {}
+    };
+    saveUser(initialProfile);
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (!profile.onboardingComplete) {
+    return <OnboardingWizard user={profile} saveUser={saveUser} />;
   }
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar 
-        user={user} 
+        user={profile} 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         onLogout={handleLogout} 
       />
       
       <main className="max-w-7xl mx-auto p-6 md:p-10">
-        {activeTab === 'home' && <Home user={user} />}
-        {activeTab === 'documents' && <Vault user={user} saveUser={saveUser} />}
-        {activeTab === 'profile' && <Profile user={user} saveUser={saveUser} />}
+        {activeTab === 'home' && <Home user={profile} />}
+        {activeTab === 'documents' && <Vault user={profile} saveUser={saveUser} />}
+        {activeTab === 'profile' && <Profile user={profile} saveUser={saveUser} />}
         {activeTab === 'sharing' && (
           <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
             <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center">
