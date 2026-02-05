@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { UserProfile, Profession } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { FileUp, FileCheck, Loader2, Search, Filter } from 'lucide-react';
 import { extractDataFromDocument } from '@/ai/flows/extract-data-from-document';
 
