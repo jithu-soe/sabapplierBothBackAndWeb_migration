@@ -25,6 +25,15 @@ const ExtractDataFromDocumentOutputSchema = z.object({
 });
 export type ExtractDataFromDocumentOutput = z.infer<typeof ExtractDataFromDocumentOutputSchema>;
 
+// Internal schema to satisfy Gemini's requirement for non-empty properties in OBJECT types.
+// z.record() can cause issues with structured output schemas in some Gemini versions because it maps to an empty properties list.
+const InternalPromptOutputSchema = z.object({
+  fields: z.array(z.object({
+    key: z.string().describe('The name of the field (e.g., Name, Date of Birth).'),
+    value: z.string().describe('The value of the field found in the document.')
+  })).describe('List of all identifiable fields extracted from the document.')
+});
+
 export async function extractDataFromDocument(input: ExtractDataFromDocumentInput): Promise<ExtractDataFromDocumentOutput> {
   return extractDataFromDocumentFlow(input);
 }
@@ -32,7 +41,7 @@ export async function extractDataFromDocument(input: ExtractDataFromDocumentInpu
 const prompt = ai.definePrompt({
   name: 'extractDataFromDocumentPrompt',
   input: {schema: ExtractDataFromDocumentInputSchema},
-  output: {schema: ExtractDataFromDocumentOutputSchema},
+  output: {schema: InternalPromptOutputSchema},
   prompt: `You are an expert in document analysis and data extraction. Your task is to extract all relevant fields from the given document.
 
 Document Type: {{{docType}}}
@@ -40,7 +49,9 @@ Document Type: {{{docType}}}
 Here is the document:
 {{media url=dataUri}}
 
-Extract all identifiable fields from the document, and return a JSON object containing the extracted data. If the document is of low quality and data cannot be reliably extracted, return a JSON object with an "error" field set to "low_quality". Ensure the output is a valid JSON object.
+Extract all identifiable fields from the document. For each field, identify its label and its value. 
+
+If the document is of low quality and data cannot be reliably extracted, include a field with key "error" and value "low_quality".
 `,
 });
 
@@ -52,6 +63,15 @@ const extractDataFromDocumentFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    
+    // Transform the array back into the record format expected by the frontend
+    const extractedData: Record<string, any> = {};
+    if (output?.fields) {
+      output.fields.forEach(f => {
+        extractedData[f.key] = f.value;
+      });
+    }
+    
+    return { extractedData };
   }
 );
