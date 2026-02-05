@@ -11,12 +11,11 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const ExtractDataFromDocumentInputSchema = z.object({
-  base64Data: z
+  dataUri: z
     .string()
-    .describe('The base64 encoded data of the document.'),
-  mimeType: z
-    .string()
-    .describe('The MIME type of the document.'),
+    .describe(
+      "The document as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+    ),
   docType: z.string().describe('The type of the document (e.g., aadhaar_card).'),
 });
 export type ExtractDataFromDocumentInput = z.infer<typeof ExtractDataFromDocumentInputSchema>;
@@ -38,9 +37,8 @@ const prompt = ai.definePrompt({
 
 Document Type: {{{docType}}}
 
-Here is the document data in base64 format:
-
-{{media mimeType=mimeType url="data:{{{mimeType}}};base64,{{{base64Data}}}}"}}
+Here is the document:
+{{media url=dataUri}}
 
 Extract all identifiable fields from the document, and return a JSON object containing the extracted data. If the document is of low quality and data cannot be reliably extracted, return a JSON object with an "error" field set to "low_quality". Ensure the output is a valid JSON object.
 `,

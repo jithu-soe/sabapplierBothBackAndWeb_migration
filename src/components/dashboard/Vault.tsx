@@ -47,15 +47,13 @@ export const Vault: React.FC<VaultProps> = ({ user, saveUser }) => {
 
     setProcessingDoc(docType);
     
-    // Convert to base64 for AI processing
     const reader = new FileReader();
     reader.onload = async () => {
-      const base64 = (reader.result as string).split(',')[1];
+      const dataUri = reader.result as string;
       
       try {
         const result = await extractDataFromDocument({
-          base64Data: base64,
-          mimeType: file.type,
+          dataUri: dataUri,
           docType: docType.toLowerCase().replace(/\s+/g, '_')
         });
 
@@ -71,7 +69,6 @@ export const Vault: React.FC<VaultProps> = ({ user, saveUser }) => {
         saveUser({ ...user, documents: updatedDocs });
       } catch (err) {
         console.error('AI Processing failed:', err);
-        // Fallback or show error
       } finally {
         setProcessingDoc(null);
       }
