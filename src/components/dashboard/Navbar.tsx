@@ -2,12 +2,12 @@
 
 import React from 'react';
 import { UserProfile } from '@/lib/types';
-import { LogOut, Home, FileText, Share2, Shield } from 'lucide-react';
+import { LogOut, Home, FileText, Share2, Shield, User } from 'lucide-react';
 
 interface NavbarProps {
   user: UserProfile;
   activeTab: string;
-  setActiveTab: (tab: 'home' | 'documents' | 'sharing') => void;
+  setActiveTab: (tab: 'home' | 'documents' | 'sharing' | 'profile') => void;
   onLogout: () => void;
 }
 
@@ -26,7 +26,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, activeTab, setActiveTab, o
             </div>
           </div>
 
-          <div className="hidden md:flex gap-8">
+          <div className="hidden md:flex gap-4">
             <NavButton 
               active={activeTab === 'home'} 
               onClick={() => setActiveTab('home')}
@@ -37,13 +37,19 @@ export const Navbar: React.FC<NavbarProps> = ({ user, activeTab, setActiveTab, o
               active={activeTab === 'documents'} 
               onClick={() => setActiveTab('documents')}
               icon={<FileText className="w-4 h-4" />}
-              label="Documents"
+              label="Vault"
             />
             <NavButton 
               active={activeTab === 'sharing'} 
               onClick={() => setActiveTab('sharing')}
               icon={<Share2 className="w-4 h-4" />}
-              label="Data Sharing"
+              label="Sharing"
+            />
+            <NavButton 
+              active={activeTab === 'profile'} 
+              onClick={() => setActiveTab('profile')}
+              icon={<User className="w-4 h-4" />}
+              label="Profile"
             />
           </div>
         </div>

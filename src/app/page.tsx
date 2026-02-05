@@ -6,6 +6,7 @@ import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 import { Navbar } from '@/components/dashboard/Navbar';
 import { Home } from '@/components/dashboard/Home';
 import { Vault } from '@/components/dashboard/Vault';
+import { Profile } from '@/components/dashboard/Profile';
 import { Button } from '@/components/ui/button';
 import { Shield, Sparkles } from 'lucide-react';
 
@@ -13,7 +14,7 @@ const STORAGE_KEY = 'sabapplier_vault_session';
 
 export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [activeTab, setActiveTab] = useState<'home' | 'documents' | 'sharing'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'documents' | 'sharing' | 'profile'>('home');
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -98,6 +99,7 @@ export default function App() {
       <main className="max-w-7xl mx-auto p-6 md:p-10">
         {activeTab === 'home' && <Home user={user} />}
         {activeTab === 'documents' && <Vault user={user} saveUser={saveUser} />}
+        {activeTab === 'profile' && <Profile user={user} saveUser={saveUser} />}
         {activeTab === 'sharing' && (
           <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
             <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center">
