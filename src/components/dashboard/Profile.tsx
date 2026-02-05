@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Mail, ShieldCheck, Edit3, Save, X, Phone, MapPin, Briefcase, GraduationCap } from 'lucide-react';
+import { User, Mail, ShieldCheck, Edit3, Save, X, Phone, MapPin, Briefcase, GraduationCap, Check } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,15 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser }) => {
     setIsEditing(false);
   };
 
+  const toggleProfession = (p: Profession) => {
+    const current = [...editedUser.professions];
+    if (current.includes(p)) {
+      setEditedUser({ ...editedUser, professions: current.filter(x => x !== p) });
+    } else if (current.length < 3) {
+      setEditedUser({ ...editedUser, professions: [...current, p] });
+    }
+  };
+
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col items-center text-center space-y-6">
@@ -52,7 +61,10 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser }) => {
         </div>
 
         <Button 
-          onClick={() => setIsEditing(true)}
+          onClick={() => {
+            setEditedUser(user);
+            setIsEditing(true);
+          }}
           className="h-12 px-8 rounded-2xl text-lg font-bold shadow-xl shadow-primary/20 flex items-center gap-3 transition-transform hover:scale-105"
         >
           <Edit3 className="w-5 h-5" /> Edit Profile
@@ -118,6 +130,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser }) => {
                     {p}
                   </Badge>
                 ))}
+                {user.professions.length === 0 && <span className="text-xs text-muted-foreground italic">None specified</span>}
               </div>
             </DetailSection>
 
@@ -139,69 +152,132 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser }) => {
           </DialogHeader>
 
           <div className="p-8 space-y-10 bg-slate-50/50">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-4">
-                <Label className="font-bold text-primary">First Name</Label>
-                <Input value={editedUser.firstName} onChange={e => setEditedUser({...editedUser, firstName: e.target.value})} className="h-12 rounded-xl" />
+            <div className="space-y-6">
+              <h3 className="text-sm font-black uppercase text-muted-foreground tracking-widest border-b pb-2">Basic Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">First Name</Label>
+                  <Input value={editedUser.firstName} onChange={e => setEditedUser({...editedUser, firstName: e.target.value})} className="h-12 rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Last Name</Label>
+                  <Input value={editedUser.lastName} onChange={e => setEditedUser({...editedUser, lastName: e.target.value})} className="h-12 rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Middle Name</Label>
+                  <Input value={editedUser.middleName} onChange={e => setEditedUser({...editedUser, middleName: e.target.value})} className="h-12 rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Phone Number</Label>
+                  <Input value={editedUser.phone} onChange={e => setEditedUser({...editedUser, phone: e.target.value})} className="h-12 rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Date of Birth</Label>
+                  <Input type="date" value={editedUser.dob} onChange={e => setEditedUser({...editedUser, dob: e.target.value})} className="h-12 rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Gender</Label>
+                  <Select value={editedUser.gender} onValueChange={v => setEditedUser({...editedUser, gender: v})}>
+                    <SelectTrigger className="h-12 rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-4">
-                <Label className="font-bold text-primary">Last Name</Label>
-                <Input value={editedUser.lastName} onChange={e => setEditedUser({...editedUser, lastName: e.target.value})} className="h-12 rounded-xl" />
-              </div>
-              <div className="space-y-4">
-                <Label className="font-bold text-primary">Middle Name</Label>
-                <Input value={editedUser.middleName} onChange={e => setEditedUser({...editedUser, middleName: e.target.value})} className="h-12 rounded-xl" />
-              </div>
-              <div className="space-y-4">
-                <Label className="font-bold text-primary">Phone Number</Label>
-                <Input value={editedUser.phone} onChange={e => setEditedUser({...editedUser, phone: e.target.value})} className="h-12 rounded-xl" />
-              </div>
-              <div className="space-y-4">
-                <Label className="font-bold text-primary">Date of Birth</Label>
-                <Input type="date" value={editedUser.dob} onChange={e => setEditedUser({...editedUser, dob: e.target.value})} className="h-12 rounded-xl" />
-              </div>
-              <div className="space-y-4">
-                <Label className="font-bold text-primary">Gender</Label>
-                <Select value={editedUser.gender} onValueChange={v => setEditedUser({...editedUser, gender: v})}>
-                  <SelectTrigger className="h-12 rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Male">Male</SelectItem>
-                    <SelectItem value="Female">Female</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="space-y-2">
+                <Label className="font-bold text-primary">Permanent Address</Label>
+                <Textarea value={editedUser.permanentAddress} onChange={e => setEditedUser({...editedUser, permanentAddress: e.target.value})} className="min-h-[100px] rounded-xl" />
               </div>
             </div>
 
-            <div className="space-y-4">
-              <Label className="font-bold text-primary">Permanent Address</Label>
-              <Textarea value={editedUser.permanentAddress} onChange={e => setEditedUser({...editedUser, permanentAddress: e.target.value})} className="min-h-[100px] rounded-xl" />
+            <div className="space-y-6">
+              <h3 className="text-sm font-black uppercase text-muted-foreground tracking-widest border-b pb-2">Education & Identity</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Mother Tongue</Label>
+                  <Select value={editedUser.motherTongue} onValueChange={v => setEditedUser({...editedUser, motherTongue: v})}>
+                    <SelectTrigger className="h-12 rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGES.map(lang => <SelectItem key={lang} value={lang}>{lang}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Highest Qualification</Label>
+                  <Select value={editedUser.highestQualification} onValueChange={v => setEditedUser({...editedUser, highestQualification: v})}>
+                    <SelectTrigger className="h-12 rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {QUALIFICATIONS.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Social Category</Label>
+                  <Select value={editedUser.socialCategory} onValueChange={v => setEditedUser({...editedUser, socialCategory: v})}>
+                    <SelectTrigger className="h-12 rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t">
-              <div className="space-y-4">
-                <Label className="font-bold text-primary">Highest Qualification</Label>
-                <Select value={editedUser.highestQualification} onValueChange={v => setEditedUser({...editedUser, highestQualification: v})}>
-                  <SelectTrigger className="h-12 rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {QUALIFICATIONS.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+            <div className="space-y-6">
+              <h3 className="text-sm font-black uppercase text-muted-foreground tracking-widest border-b pb-2">Professional Roles</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {(['Student', 'Professional', 'Founder', 'Researcher', 'Other'] as Profession[]).map(p => (
+                  <Button
+                    key={p}
+                    type="button"
+                    variant={editedUser.professions.includes(p) ? 'default' : 'outline'}
+                    className="justify-between px-4 h-12 rounded-xl text-xs font-bold"
+                    onClick={() => toggleProfession(p)}
+                  >
+                    {p}
+                    {editedUser.professions.includes(p) && <Check className="w-4 h-4" />}
+                  </Button>
+                ))}
               </div>
-              <div className="space-y-4">
-                <Label className="font-bold text-primary">Domicile State</Label>
-                <Select value={editedUser.domicileState} onValueChange={v => setEditedUser({...editedUser, domicileState: v})}>
-                  <SelectTrigger className="h-12 rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+            </div>
+
+            <div className="space-y-6">
+              <h3 className="text-sm font-black uppercase text-muted-foreground tracking-widest border-b pb-2">Geographic Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Nationality</Label>
+                  <Input value={editedUser.nationality} onChange={e => setEditedUser({...editedUser, nationality: e.target.value})} className="h-12 rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Domicile State</Label>
+                  <Select value={editedUser.domicileState} onValueChange={v => setEditedUser({...editedUser, domicileState: v})}>
+                    <SelectTrigger className="h-12 rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">District</Label>
+                  <Input value={editedUser.district} onChange={e => setEditedUser({...editedUser, district: e.target.value})} className="h-12 rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Pincode</Label>
+                  <Input value={editedUser.pincode} maxLength={6} onChange={e => setEditedUser({...editedUser, pincode: e.target.value})} className="h-12 rounded-xl" />
+                </div>
               </div>
             </div>
           </div>
