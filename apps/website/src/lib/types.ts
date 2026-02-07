@@ -1,6 +1,7 @@
 export type Profession = 'Student' | 'Professional' | 'Founder' | 'Researcher' | 'Other';
 
 export interface UserProfile {
+  userId: string;
   email: string;
   fullName: string;
   onboardingComplete: boolean;
@@ -33,9 +34,13 @@ export interface UserProfile {
   mandal?: string;
   pincode?: string;
   
-  documents: Record<string, { 
-    url: string; 
-    aiData: any; 
+  documents: Record<string, {
+    fileUrl: string;
+    storagePath?: string;
+    extractedData?: Record<string, unknown> | null;
+    error?: string;
+    uploadedAt: string;
+    processedAt?: string;
     status: 'idle' | 'processing' | 'verified' | 'rejected' 
   }>;
 }

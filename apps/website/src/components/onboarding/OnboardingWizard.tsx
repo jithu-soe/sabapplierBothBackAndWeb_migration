@@ -9,26 +9,34 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { ChevronRight, ChevronLeft, Check } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, ShieldCheck } from 'lucide-react';
+import { DocumentUpload } from './DocumentUpload';
 
 interface OnboardingWizardProps {
+  userId: string;
+  authToken: string;
   user: UserProfile;
   saveUser: (user: UserProfile) => void;
 }
 
-export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUser }) => {
+export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ userId, authToken, user, saveUser }) => {
   const currentStep = user.onboardingStep;
-  const progress = (currentStep / 3) * 100;
+  const TOTAL_STEPS = 4;
+  const progress = (currentStep / TOTAL_STEPS) * 100;
 
   const validateStep = () => {
     if (currentStep === 1) {
-      return user.firstName && user.lastName && user.dob && user.phone && user.permanentAddress;
+      return !!(user.firstName && user.lastName && user.dob && user.phone && user.permanentAddress);
     }
     if (currentStep === 2) {
-      return user.gender && user.motherTongue && user.professions.length > 0;
+      return !!(user.gender && user.motherTongue && user.professions.length > 0);
     }
     if (currentStep === 3) {
-      return user.nationality && user.domicileState && user.district && user.pincode;
+      return !!(user.nationality && user.domicileState && user.district && user.pincode);
+    }
+    if (currentStep === 4) {
+      // Step 4 is optional for onboarding completion.
+      return true;
     }
     return false;
   };
@@ -36,7 +44,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
   const isStepValid = validateStep();
 
   const handleNext = () => {
-    if (currentStep < 3) {
+    if (currentStep < TOTAL_STEPS) {
       saveUser({ ...user, onboardingStep: currentStep + 1 });
     } else {
       saveUser({ ...user, onboardingComplete: true });
@@ -49,12 +57,25 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
     }
   };
 
+  const handleDocumentUpdate = (docType: string, url?: string, aiData?: any) => {
+    const updatedDocs = { ...user.documents };
+    const existing = updatedDocs[docType];
+    updatedDocs[docType] = {
+      fileUrl: url || existing?.fileUrl || '',
+      extractedData: aiData || existing?.extractedData || null,
+      status: aiData ? 'verified' : 'processing',
+      uploadedAt: existing?.uploadedAt || new Date().toISOString(),
+      processedAt: aiData ? new Date().toISOString() : existing?.processedAt,
+    };
+    saveUser({ ...user, documents: updatedDocs });
+  };
+
   return (
     <div className="min-h-screen bg-background py-12 px-4 sm:px-6">
       <div className="max-w-3xl mx-auto space-y-8">
         <div className="space-y-4 text-center">
           <h1 className="text-4xl font-black text-primary tracking-tight">Complete Your Profile</h1>
-          <p className="text-muted-foreground font-medium">Step {currentStep} of 3</p>
+          <p className="text-muted-foreground font-medium">Step {currentStep} of {TOTAL_STEPS}</p>
           <Progress value={progress} className="h-2 w-full max-w-md mx-auto" />
         </div>
 
@@ -66,36 +87,36 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>First Name *</Label>
-                    <Input 
-                      placeholder="First Name" 
-                      value={user.firstName || ''} 
-                      onChange={(e) => saveUser({...user, firstName: e.target.value})}
+                    <Input
+                      placeholder="First Name"
+                      value={user.firstName || ''}
+                      onChange={(e) => saveUser({ ...user, firstName: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Last Name *</Label>
-                    <Input 
-                      placeholder="Last Name" 
-                      value={user.lastName || ''} 
-                      onChange={(e) => saveUser({...user, lastName: e.target.value})}
+                    <Input
+                      placeholder="Last Name"
+                      value={user.lastName || ''}
+                      onChange={(e) => saveUser({ ...user, lastName: e.target.value })}
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Date of Birth *</Label>
-                    <Input 
-                      type="date" 
-                      value={user.dob || ''} 
-                      onChange={(e) => saveUser({...user, dob: e.target.value})}
+                    <Input
+                      type="date"
+                      value={user.dob || ''}
+                      onChange={(e) => saveUser({ ...user, dob: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Phone Number *</Label>
-                    <Input 
-                      placeholder="+91" 
-                      value={user.phone || ''} 
-                      onChange={(e) => saveUser({...user, phone: e.target.value})}
+                    <Input
+                      placeholder="+91"
+                      value={user.phone || ''}
+                      onChange={(e) => saveUser({ ...user, phone: e.target.value })}
                     />
                   </div>
                 </div>
@@ -106,18 +127,18 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Father's Name</Label>
-                    <Input 
-                      placeholder="Father's Name" 
-                      value={user.fatherName || ''} 
-                      onChange={(e) => saveUser({...user, fatherName: e.target.value})}
+                    <Input
+                      placeholder="Father's Name"
+                      value={user.fatherName || ''}
+                      onChange={(e) => saveUser({ ...user, fatherName: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Mother's Name</Label>
-                    <Input 
-                      placeholder="Mother's Name" 
-                      value={user.motherName || ''} 
-                      onChange={(e) => saveUser({...user, motherName: e.target.value})}
+                    <Input
+                      placeholder="Mother's Name"
+                      value={user.motherName || ''}
+                      onChange={(e) => saveUser({ ...user, motherName: e.target.value })}
                     />
                   </div>
                 </div>
@@ -125,10 +146,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
 
               <div className="space-y-4">
                 <Label>Permanent Address *</Label>
-                <Textarea 
-                  placeholder="Street, City, Building..." 
-                  value={user.permanentAddress || ''} 
-                  onChange={(e) => saveUser({...user, permanentAddress: e.target.value})}
+                <Textarea
+                  placeholder="Street, City, Building..."
+                  value={user.permanentAddress || ''}
+                  onChange={(e) => saveUser({ ...user, permanentAddress: e.target.value })}
                 />
               </div>
             </div>
@@ -141,7 +162,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Gender *</Label>
-                    <Select value={user.gender} onValueChange={(v) => saveUser({...user, gender: v})}>
+                    <Select value={user.gender} onValueChange={(v) => saveUser({ ...user, gender: v })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select Gender" />
                       </SelectTrigger>
@@ -154,7 +175,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                   </div>
                   <div className="space-y-2">
                     <Label>Mother Tongue *</Label>
-                    <Select value={user.motherTongue} onValueChange={(v) => saveUser({...user, motherTongue: v})}>
+                    <Select value={user.motherTongue} onValueChange={(v) => saveUser({ ...user, motherTongue: v })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select Language" />
                       </SelectTrigger>
@@ -170,7 +191,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
 
               <div className="space-y-4">
                 <Label>Education Qualification</Label>
-                <Select value={user.highestQualification} onValueChange={(v) => saveUser({...user, highestQualification: v})}>
+                <Select value={user.highestQualification} onValueChange={(v) => saveUser({ ...user, highestQualification: v })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select Qualification" />
                   </SelectTrigger>
@@ -215,7 +236,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Social Category</Label>
-                    <Select value={user.socialCategory} onValueChange={(v) => saveUser({...user, socialCategory: v})}>
+                    <Select value={user.socialCategory} onValueChange={(v) => saveUser({ ...user, socialCategory: v })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select Category" />
                       </SelectTrigger>
@@ -226,7 +247,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                   </div>
                   <div className="space-y-2">
                     <Label>Religion</Label>
-                    <Select value={user.religion} onValueChange={(v) => saveUser({...user, religion: v})}>
+                    <Select value={user.religion} onValueChange={(v) => saveUser({ ...user, religion: v })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select Religion" />
                       </SelectTrigger>
@@ -241,11 +262,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Nationality *</Label>
-                  <Input placeholder="Indian" value={user.nationality || ''} onChange={(e) => saveUser({...user, nationality: e.target.value})} />
+                  <Input placeholder="Indian" value={user.nationality || ''} onChange={(e) => saveUser({ ...user, nationality: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label>Domicile State *</Label>
-                  <Select value={user.domicileState} onValueChange={(v) => saveUser({...user, domicileState: v})}>
+                  <Select value={user.domicileState} onValueChange={(v) => saveUser({ ...user, domicileState: v })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select State" />
                     </SelectTrigger>
@@ -259,12 +280,83 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>District *</Label>
-                  <Input placeholder="District" value={user.district || ''} onChange={(e) => saveUser({...user, district: e.target.value})} />
+                  <Input placeholder="District" value={user.district || ''} onChange={(e) => saveUser({ ...user, district: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label>Pincode *</Label>
-                  <Input placeholder="6-digit PIN" maxLength={6} value={user.pincode || ''} onChange={(e) => saveUser({...user, pincode: e.target.value})} />
+                  <Input placeholder="6-digit PIN" maxLength={6} value={user.pincode || ''} onChange={(e) => saveUser({ ...user, pincode: e.target.value })} />
                 </div>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 4 && (
+            <div className="space-y-8">
+              <div className="text-center space-y-2 mb-6">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ShieldCheck className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold text-primary">Upload Verification Documents</h3>
+                <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+                  These documents help us automatically fill 80% of application forms.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <DocumentUpload
+                  userId={userId}
+                  authToken={authToken}
+                  label="Passport Size Photo *"
+                  docType="passport_photo"
+                  currentUrl={user.documents?.['passport_photo']?.fileUrl}
+                  onUploadComplete={(url) => handleDocumentUpdate('passport_photo', url)}
+                  onExtractionComplete={(data) => handleDocumentUpdate('passport_photo', undefined, data)}
+                />
+                <DocumentUpload
+                  userId={userId}
+                  authToken={authToken}
+                  label="Aadhaar Card *"
+                  docType="aadhaar_card"
+                  currentUrl={user.documents?.['aadhaar_card']?.fileUrl}
+                  onUploadComplete={(url) => handleDocumentUpdate('aadhaar_card', url)}
+                  onExtractionComplete={(data) => handleDocumentUpdate('aadhaar_card', undefined, data)}
+                />
+                <DocumentUpload
+                  userId={userId}
+                  authToken={authToken}
+                  label="Signature"
+                  docType="signature"
+                  currentUrl={user.documents?.['signature']?.fileUrl}
+                  onUploadComplete={(url) => handleDocumentUpdate('signature', url)}
+                  onExtractionComplete={(data) => handleDocumentUpdate('signature', undefined, data)}
+                />
+                <DocumentUpload
+                  userId={userId}
+                  authToken={authToken}
+                  label="PAN Card"
+                  docType="pan_card"
+                  currentUrl={user.documents?.['pan_card']?.fileUrl}
+                  onUploadComplete={(url) => handleDocumentUpdate('pan_card', url)}
+                  onExtractionComplete={(data) => handleDocumentUpdate('pan_card', undefined, data)}
+                />
+                <DocumentUpload
+                  userId={userId}
+                  authToken={authToken}
+                  label="10th Marksheet"
+                  docType="10th_marksheet"
+                  currentUrl={user.documents?.['10th_marksheet']?.fileUrl}
+                  onUploadComplete={(url) => handleDocumentUpdate('10th_marksheet', url)}
+                  onExtractionComplete={(data) => handleDocumentUpdate('10th_marksheet', undefined, data)}
+                />
+                <DocumentUpload
+                  userId={userId}
+                  authToken={authToken}
+                  label="12th Marksheet"
+                  docType="12th_marksheet"
+                  currentUrl={user.documents?.['12th_marksheet']?.fileUrl}
+                  onUploadComplete={(url) => handleDocumentUpdate('12th_marksheet', url)}
+                  onExtractionComplete={(data) => handleDocumentUpdate('12th_marksheet', undefined, data)}
+                />
               </div>
             </div>
           )}
@@ -275,12 +367,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                 <ChevronLeft className="mr-2 w-4 h-4" /> Back
               </Button>
             )}
-            <Button 
-              disabled={!isStepValid} 
-              onClick={handleNext} 
+            <Button
+              disabled={!isStepValid}
+              onClick={handleNext}
               className="flex-[2] h-12 shadow-lg shadow-primary/20"
             >
-              {currentStep === 3 ? 'Complete Profile' : 'Continue'} <ChevronRight className="ml-2 w-4 h-4" />
+              {currentStep === TOTAL_STEPS ? 'Complete Profile' : 'Continue'} <ChevronRight className="ml-2 w-4 h-4" />
             </Button>
           </div>
         </Card>

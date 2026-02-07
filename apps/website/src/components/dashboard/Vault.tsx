@@ -15,7 +15,8 @@ import {
   Trash2,
   ExternalLink 
 } from 'lucide-react';
-import { extractDataFromDocument } from '@/ai/flows/extract-data-from-document';
+import { processVaultDocument } from '@/lib/api';
+import { uploadUserDocument } from '@/firebase/storage';
 import {
   Dialog,
   DialogContent,
@@ -33,11 +34,13 @@ import {
 } from "@/components/ui/table";
 
 interface VaultProps {
+  userId: string;
+  authToken: string;
   user: UserProfile;
   saveUser: (user: UserProfile) => void;
 }
 
-export const Vault: React.FC<VaultProps> = ({ user, saveUser }) => {
+export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser }) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [processingDoc, setProcessingDoc] = useState<string | null>(null);
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
@@ -77,17 +80,24 @@ export const Vault: React.FC<VaultProps> = ({ user, saveUser }) => {
       const dataUri = reader.result as string;
       
       try {
-        const result = await extractDataFromDocument({
-          dataUri: dataUri,
-          docType: docType.toLowerCase().replace(/\s+/g, '_')
+        const normalizedDocType = docType.toLowerCase().replace(/\s+/g, '_');
+        const { fileUrl, storagePath } = await uploadUserDocument(userId, file, normalizedDocType);
+        const processed = await processVaultDocument(authToken, {
+          dataUri,
+          docType: normalizedDocType,
+          fileUrl,
+          storagePath,
         });
 
         const updatedDocs = {
           ...user.documents,
           [docType]: {
-            url: dataUri,
-            aiData: result.extractedData,
-            status: 'verified' as const
+            fileUrl,
+            storagePath,
+            extractedData: processed.user.documents?.[normalizedDocType]?.extractedData || null,
+            status: processed.user.documents?.[normalizedDocType]?.status || 'verified',
+            uploadedAt: processed.user.documents?.[normalizedDocType]?.uploadedAt || new Date().toISOString(),
+            processedAt: processed.user.documents?.[normalizedDocType]?.processedAt,
           }
         };
 
@@ -177,7 +187,7 @@ export const Vault: React.FC<VaultProps> = ({ user, saveUser }) => {
                     </div>
                   ) : (
                     <label className="block">
-                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(doc, e)} />
+                      <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(doc, e)} />
                       <div className="w-full py-3 bg-secondary/50 border-2 border-dashed border-border rounded-xl text-center cursor-pointer hover:bg-secondary transition-all">
                         <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Upload File</span>
                       </div>
@@ -230,7 +240,7 @@ export const Vault: React.FC<VaultProps> = ({ user, saveUser }) => {
         </Card>
       </aside>
 
-      <Dialog open={!!viewingDoc} onOpenChange={(open) => !open && setViewingDoc(null)}>
+      <Dialog open={!!viewingDoc} onOpenChange={(open: boolean) => !open && setViewingDoc(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0 border-none rounded-[2rem]">
           <DialogHeader className="p-8 border-b bg-white">
             <div className="flex items-center justify-between">
@@ -244,10 +254,10 @@ export const Vault: React.FC<VaultProps> = ({ user, saveUser }) => {
           <div className="flex-1 overflow-auto bg-slate-50">
             <div className="grid grid-cols-1 md:grid-cols-2 h-full">
               <div className="p-8 flex items-center justify-center border-b md:border-b-0 md:border-r bg-slate-100">
-                {currentDocData?.url && (
+                {currentDocData?.fileUrl && (
                   <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl bg-white p-2">
                     <img 
-                      src={currentDocData.url} 
+                      src={currentDocData.fileUrl} 
                       alt={viewingDoc || ''} 
                       className="w-full h-full object-contain rounded-xl"
                     />
@@ -267,13 +277,13 @@ export const Vault: React.FC<VaultProps> = ({ user, saveUser }) => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {currentDocData?.aiData && Object.entries(currentDocData.aiData).map(([key, value]) => (
+                        {currentDocData?.extractedData && Object.entries(currentDocData.extractedData).map(([key, value]) => (
                           <TableRow key={key} className="border-secondary/50">
                             <TableCell className="font-bold text-xs py-3 text-primary">{key}</TableCell>
                             <TableCell className="text-xs py-3 font-medium text-muted-foreground">{String(value)}</TableCell>
                           </TableRow>
                         ))}
-                        {(!currentDocData?.aiData || Object.keys(currentDocData.aiData).length === 0) && (
+                        {(!currentDocData?.extractedData || Object.keys(currentDocData.extractedData).length === 0) && (
                           <TableRow>
                             <TableCell colSpan={2} className="text-center py-10 text-muted-foreground italic text-xs">
                               No data fields extracted

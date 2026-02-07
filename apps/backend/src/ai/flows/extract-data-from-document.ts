@@ -7,7 +7,7 @@
  * - ExtractDataFromDocumentOutput - The return type for the extractDataFromDocument function.
  */
 
-import {ai} from '@/ai/genkit';
+import { ai } from '../genkit';
 import {z} from 'genkit';
 
 const ExtractDataFromDocumentInputSchema = z.object({
@@ -61,13 +61,13 @@ const extractDataFromDocumentFlow = ai.defineFlow(
     inputSchema: ExtractDataFromDocumentInputSchema,
     outputSchema: ExtractDataFromDocumentOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async (input: ExtractDataFromDocumentInput) => {
+    const { output } = await prompt(input);
     
     // Transform the array back into the record format expected by the frontend
     const extractedData: Record<string, any> = {};
     if (output?.fields) {
-      output.fields.forEach(f => {
+      output.fields.forEach((f: { key: string; value: string }) => {
         extractedData[f.key] = f.value;
       });
     }

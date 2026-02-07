@@ -43,3 +43,8 @@ next-env.d.ts
 # firebase
 firebase-debug.log
 firestore-debug.log
+# apps workspace artifacts
+/apps.zip
+/apps/**/node_modules/
+/apps/**/.next/
+/apps/**/dist/
