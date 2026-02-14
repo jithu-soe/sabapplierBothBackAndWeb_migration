@@ -8,7 +8,10 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET || 'dev-jwt-secret',
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  corsOrigins: (process.env.CORS_ORIGINS || process.env.CORS_ORIGIN || 'http://localhost:3000')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
   dbUser: process.env.DB_USER || '',
   dbPassword: process.env.DB_PASSWORD || '',
   dbHost: process.env.DB_HOST || '',

@@ -1,3 +1,16 @@
+
+
+# run 
+
+npm run dev --workspace=backend
+npm run dev --workspace=website
+
+
+
+
+
+
+
 # Sabapplier Apps (Backend + Website)
 
 This `apps` folder contains two Node.js projects:
@@ -51,7 +64,8 @@ This `apps` folder contains two Node.js projects:
 ### Backend env: `apps/backend/.env`
 Important keys:
 - `PORT` (default `4000`)
-- `CORS_ORIGIN` (frontend URL, example `http://localhost:3000`)
+- `CORS_ORIGINS` (comma-separated allowed origins, example `https://sabapplier.com,chrome-extension://<EXTENSION_ID>`)
+  - Backward-compatible: `CORS_ORIGIN` also works for a single origin.
 - `JWT_SECRET`
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
 - `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_SSL_CA_PATH`, `DB_REJECT_UNAUTHORIZED`
@@ -69,9 +83,46 @@ Important keys:
 - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
 
-## 3) Run locally (development)
+## 3) Run locally (development, OS-independent recommended)
 
-Open 2 terminals from `apps` folder.
+Use Docker Compose so all teammates run the same stack on Windows, Ubuntu, or macOS.
+
+### Prerequisites
+- Docker Engine + Docker Compose plugin (Linux)
+- OR Docker Desktop (Windows/macOS)
+
+### Start everything from `apps/`
+```bash
+# Linux/macOS/Git-Bash
+cp .env.example .env
+
+# Windows CMD
+copy .env.example .env
+
+# Windows PowerShell
+Copy-Item .env.example .env
+
+docker compose up --build
+```
+
+Services:
+- Website: `http://localhost:3000`
+- Backend: `http://localhost:4000`
+- PostgreSQL: `localhost:5432`
+
+### Stop and clean
+```bash
+docker compose down
+```
+
+To also remove DB data volume:
+```bash
+docker compose down -v
+```
+
+## 4) Run locally (native npm, optional)
+
+Use this only if you do not want Docker. This depends on local Node/PostgreSQL setup.
 
 ### Terminal 1: backend
 ```bash
@@ -89,7 +140,7 @@ npm run dev
 ```
 Website runs on `http://localhost:3000`.
 
-## 4) Run locally (production mode)
+## 5) Run locally (production mode)
 
 ### Backend
 ```bash
@@ -111,7 +162,7 @@ Or use script:
 npm run start
 ```
 
-## 5) Deploy to remote EC2 Ubuntu using PEM + PM2
+## 6) Deploy to remote EC2 Ubuntu using PEM + PM2
 
 Assumption: you already have EC2 access, PEM key, and PM2 installed.
 
@@ -140,7 +191,7 @@ Create/update:
 - `/home/ubuntu/apps/website/.env.local`
 
 Important for remote:
-- backend `CORS_ORIGIN` should match your website domain.
+- backend `CORS_ORIGINS` should include your website domain and extension origin.
 - website `NEXT_PUBLIC_API_BASE_URL` should point to backend public URL (or Nginx path).
 - use a strong `JWT_SECRET`.
 
@@ -190,7 +241,7 @@ pm2 stop sabapplier-backend
 pm2 delete sabapplier-website
 ```
 
-## 6) Optional: Nginx reverse proxy (recommended)
+## 7) Optional: Nginx reverse proxy (recommended)
 
 Use Nginx in front of PM2 apps:
 - route `/` to website (port 3000)
@@ -198,9 +249,9 @@ Use Nginx in front of PM2 apps:
 
 Then set:
 - `NEXT_PUBLIC_API_BASE_URL` to your backend public URL.
-- backend `CORS_ORIGIN` to your website public URL.
+- backend `CORS_ORIGINS` to your website public URL and extension origin.
 
-## 7) Quick health checks
+## 8) Quick health checks
 
 Backend:
 ```bash
@@ -216,12 +267,16 @@ Website local response check:
 curl -I http://127.0.0.1:3000
 ```
 
-## 8) Common issues
+## 9) Common issues
+
+- Docker Desktop on Windows is required for the Docker flow.
+- If file changes are not picked up inside containers, restart with:
+  - `docker compose down && docker compose up --build`
 
 - `Upload failed` from `/vault/upload`:
   - Backend route needs `FIREBASE_STORAGE_BUCKET` and valid service account path.
 - CORS errors:
-  - Fix backend `CORS_ORIGIN` to exact frontend origin.
+  - Fix backend `CORS_ORIGINS` to include exact frontend and extension origins.
 - 401 token errors:
   - Ensure frontend sends `Authorization: Bearer <token>` and JWT secret is consistent.
 - PM2 app starts then exits:

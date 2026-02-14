@@ -23,8 +23,19 @@ async function runDocumentExtraction(dataUri: string, docType: string): Promise<
   }
 }
 
-function setCorsHeaders(res: ServerResponse): void {
-  res.setHeader('Access-Control-Allow-Origin', config.corsOrigin);
+function resolveCorsOrigin(req: IncomingMessage): string | null {
+  const origin = req.headers.origin;
+  if (!origin) return config.corsOrigins[0] || null;
+  if (config.corsOrigins.includes(origin)) return origin;
+  return null;
+}
+
+function setCorsHeaders(req: IncomingMessage, res: ServerResponse): void {
+  const allowedOrigin = resolveCorsOrigin(req);
+  if (allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    res.setHeader('Vary', 'Origin');
+  }
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -44,8 +55,8 @@ function setSecurityHeaders(res: ServerResponse): void {
   );
 }
 
-function sendJson(res: ServerResponse, status: number, body: unknown): void {
-  setCorsHeaders(res);
+function sendJson(req: IncomingMessage, res: ServerResponse, status: number, body: unknown): void {
+  setCorsHeaders(req, res);
   setSecurityHeaders(res);
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json');
@@ -144,19 +155,19 @@ const server = createServer(async (req, res) => {
     });
 
     if (isRateLimited(req)) {
-      sendJson(res, 429, { error: 'Too many requests' });
+      sendJson(req, res, 429, { error: 'Too many requests' });
       return;
     }
 
     if (method === 'OPTIONS') {
-      setCorsHeaders(res);
+      setCorsHeaders(req, res);
       res.statusCode = 204;
       res.end();
       return;
     }
 
     if (method === 'GET' && pathname === '/health') {
-      sendJson(res, 200, { ok: true });
+      sendJson(req, res, 200, { ok: true });
       return;
     }
 
@@ -169,7 +180,7 @@ const server = createServer(async (req, res) => {
           errors: parsed.error.flatten(),
           bodyKeys: body && typeof body === 'object' ? Object.keys(body) : [],
         });
-        sendJson(res, 400, { error: parsed.error.flatten() });
+        sendJson(req, res, 400, { error: parsed.error.flatten() });
         return;
       }
       const { credential, code } = parsed.data;
@@ -205,7 +216,7 @@ const server = createServer(async (req, res) => {
 
       const token = issueJwt({ userId: user.userId, email: user.email });
       const latest = await getUser(user.userId);
-      sendJson(res, 200, { token, user: latest || user });
+      sendJson(req, res, 200, { token, user: latest || user });
       return;
     }
 
@@ -213,17 +224,17 @@ const server = createServer(async (req, res) => {
       const auth = readAuth(req);
       if (!auth) {
         logWarn('Unauthorized /profile access', { requestId, pathname });
-        sendJson(res, 401, { error: 'Missing or invalid token' });
+        sendJson(req, res, 401, { error: 'Missing or invalid token' });
         return;
       }
 
       if (method === 'GET') {
         const user = await getUser(auth.userId);
         if (!user) {
-          sendJson(res, 404, { error: 'User profile not found' });
+          sendJson(req, res, 404, { error: 'User profile not found' });
           return;
         }
-        sendJson(res, 200, { user });
+        sendJson(req, res, 200, { user });
         return;
       }
 
@@ -236,16 +247,16 @@ const server = createServer(async (req, res) => {
             errors: parsed.error.flatten(),
             bodyKeys: body && typeof body === 'object' ? Object.keys(body) : [],
           });
-          sendJson(res, 400, { error: parsed.error.flatten() });
+          sendJson(req, res, 400, { error: parsed.error.flatten() });
           return;
         }
 
         const patched = await patchUser(auth.userId, parsed.data || {});
         if (!patched) {
-          sendJson(res, 404, { error: 'User profile not found' });
+          sendJson(req, res, 404, { error: 'User profile not found' });
           return;
         }
-        sendJson(res, 200, { user: patched });
+        sendJson(req, res, 200, { user: patched });
         return;
       }
     }
@@ -254,7 +265,7 @@ const server = createServer(async (req, res) => {
       const auth = readAuth(req);
       if (!auth) {
         logWarn('Unauthorized /profile/onboard access', { requestId, pathname });
-        sendJson(res, 401, { error: 'Missing or invalid token' });
+        sendJson(req, res, 401, { error: 'Missing or invalid token' });
         return;
       }
 
@@ -266,14 +277,14 @@ const server = createServer(async (req, res) => {
           errors: parsed.error.flatten(),
           bodyKeys: body && typeof body === 'object' ? Object.keys(body) : [],
         });
-        sendJson(res, 400, { error: parsed.error.flatten() });
+        sendJson(req, res, 400, { error: parsed.error.flatten() });
         return;
       }
       const step = parsed.data.step;
       const pageData = parsed.data.pageData as Partial<UserProfile>;
       const current = await getUser(auth.userId);
       if (!current) {
-        sendJson(res, 404, { error: 'User profile not found' });
+        sendJson(req, res, 404, { error: 'User profile not found' });
         return;
       }
 
@@ -284,7 +295,7 @@ const server = createServer(async (req, res) => {
         onboardingComplete: parsed.data.onboardingComplete ?? current.onboardingComplete,
       });
 
-      sendJson(res, 200, { user: merged });
+      sendJson(req, res, 200, { user: merged });
       return;
     }
 
@@ -292,7 +303,7 @@ const server = createServer(async (req, res) => {
       const auth = readAuth(req);
       if (!auth) {
         logWarn('Unauthorized /vault/process access', { requestId, pathname });
-        sendJson(res, 401, { error: 'Missing or invalid token' });
+        sendJson(req, res, 401, { error: 'Missing or invalid token' });
         return;
       }
 
@@ -304,14 +315,14 @@ const server = createServer(async (req, res) => {
           errors: parsed.error.flatten(),
           bodyKeys: body && typeof body === 'object' ? Object.keys(body) : [],
         });
-        sendJson(res, 400, { error: parsed.error.flatten() });
+        sendJson(req, res, 400, { error: parsed.error.flatten() });
         return;
       }
       const { dataUri, docType, fileUrl, storagePath } = parsed.data;
 
       const current = await getUser(auth.userId);
       if (!current) {
-        sendJson(res, 404, { error: 'User profile not found' });
+        sendJson(req, res, 404, { error: 'User profile not found' });
         return;
       }
 
@@ -334,7 +345,7 @@ const server = createServer(async (req, res) => {
           },
         });
 
-        sendJson(res, 200, { document: doc, user: updated });
+        sendJson(req, res, 200, { document: doc, user: updated });
         return;
       } catch (error) {
         logError('Vault processing failed', error, { requestId, docType });
@@ -356,7 +367,7 @@ const server = createServer(async (req, res) => {
           },
         });
 
-        sendJson(res, 500, { error: 'Processing failed', user: updated });
+        sendJson(req, res, 500, { error: 'Processing failed', user: updated });
         return;
       }
     }
@@ -365,7 +376,7 @@ const server = createServer(async (req, res) => {
       const auth = readAuth(req);
       if (!auth) {
         logWarn('Unauthorized /vault/upload access', { requestId, pathname });
-        sendJson(res, 401, { error: 'Missing or invalid token' });
+        sendJson(req, res, 401, { error: 'Missing or invalid token' });
         return;
       }
 
@@ -377,14 +388,14 @@ const server = createServer(async (req, res) => {
           errors: parsed.error.flatten(),
           bodyKeys: body && typeof body === 'object' ? Object.keys(body) : [],
         });
-        sendJson(res, 400, { error: parsed.error.flatten() });
+        sendJson(req, res, 400, { error: parsed.error.flatten() });
         return;
       }
 
       const { docType, fileName, mimeType, dataUri } = parsed.data;
       const current = await getUser(auth.userId);
       if (!current) {
-        sendJson(res, 404, { error: 'User profile not found' });
+        sendJson(req, res, 404, { error: 'User profile not found' });
         return;
       }
 
@@ -414,7 +425,7 @@ const server = createServer(async (req, res) => {
           },
         });
 
-        sendJson(res, 200, {
+        sendJson(req, res, 200, {
           fileUrl: uploaded.fileUrl,
           storagePath: uploaded.storagePath,
           user: updated,
@@ -422,15 +433,15 @@ const server = createServer(async (req, res) => {
         return;
       } catch (error) {
         logError('Upload to Firebase Storage failed', error, { requestId, docType });
-        sendJson(res, 500, { error: 'Upload failed' });
+        sendJson(req, res, 500, { error: 'Upload failed' });
         return;
       }
     }
 
-    sendJson(res, 404, { error: 'Not found' });
+    sendJson(req, res, 404, { error: 'Not found' });
   } catch (error) {
     logError('Unhandled server error', error, { requestId });
-    sendJson(res, 500, { error: 'Internal server error' });
+    sendJson(req, res, 500, { error: 'Internal server error' });
   }
 });
 
