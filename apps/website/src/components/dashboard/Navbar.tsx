@@ -1,19 +1,28 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { UserProfile } from '@/lib/types';
-import { LogOut, Home, FileText, Share2, Shield, User, Menu } from 'lucide-react';
+import { LogOut, Home, FileText, Share2, User, Menu, ChevronDown, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface NavbarProps {
   user: UserProfile;
   activeTab: string;
   setActiveTab: (tab: 'home' | 'documents' | 'sharing' | 'profile') => void;
   onLogout: () => void;
+  onDeleteAccount: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ user, activeTab, setActiveTab, onLogout }) => {
+export const Navbar: React.FC<NavbarProps> = ({ user, activeTab, setActiveTab, onLogout, onDeleteAccount }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
+  const userInitial = user.firstName?.[0] || user.fullName?.[0] || 'U';
+
+  useEffect(() => {
+    setAvatarLoadFailed(false);
+  }, [user.avatarUrl]);
 
   const tabs: Array<{
     key: 'home' | 'documents' | 'sharing' | 'profile';
@@ -28,19 +37,24 @@ export const Navbar: React.FC<NavbarProps> = ({ user, activeTab, setActiveTab, o
 
   return (
     <nav className="glass-nav text-white sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between">
         <div className="flex items-center gap-12">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white">
-              <Shield className="w-6 h-6" />
+          <div className="flex items-center gap-3 group">
+            <div className="relative w-11 h-11 rounded-xl overflow-hidden border border-white/30 bg-white/10 shadow-lg">
+              <Image
+                src="/logo.jpeg"
+                alt="SabApplier AI"
+                fill
+                className="object-cover"
+              />
             </div>
             <div className="hidden sm:block">
-              <div className="text-xl font-black tracking-tight">SABAPPLIER</div>
-              <div className="text-[10px] text-blue-300 font-bold tracking-widest uppercase">Identity Vault</div>
+              <div className="text-[18px] font-black tracking-tight leading-none">SABAPPLIER</div>
+              <div className="text-[10px] text-[#d2ddff] font-bold tracking-widest uppercase mt-1">Identity Vault</div>
             </div>
           </div>
 
-          <div className="hidden md:flex gap-4">
+          <div className="hidden md:flex gap-2 p-1.5 rounded-xl bg-white/8 border border-white/10 backdrop-blur-sm">
             {tabs.map((tab) => (
               <NavButton
                 key={tab.key}
@@ -57,13 +71,13 @@ export const Navbar: React.FC<NavbarProps> = ({ user, activeTab, setActiveTab, o
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <button
-                className="md:hidden w-10 h-10 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center transition-all"
+                className="md:hidden w-10 h-10 bg-white/10 border border-white/20 hover:bg-white/20 rounded-xl flex items-center justify-center transition-all"
                 aria-label="Open navigation menu"
               >
                 <Menu className="w-5 h-5" />
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="bg-[#1e2b48] text-white border-white/10">
+            <SheetContent side="left" className="bg-gradient-to-b from-[#2F56C0] to-[#284aa8] text-white border-white/10">
               <SheetHeader>
                 <SheetTitle className="text-white">Menu</SheetTitle>
                 <SheetDescription className="text-white/70">
@@ -88,18 +102,60 @@ export const Navbar: React.FC<NavbarProps> = ({ user, activeTab, setActiveTab, o
             </SheetContent>
           </Sheet>
 
-          <div className="text-right hidden sm:block">
-            <div className="text-sm font-bold">{user.fullName}</div>
-            <div className="text-[10px] opacity-60 uppercase font-bold tracking-tighter">
-              {user.professions.join(' • ')}
+          <div className="hidden sm:flex items-center gap-3 px-3 py-2 rounded-xl bg-white/10 border border-white/15">
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-xs font-black overflow-hidden">
+              {user.avatarUrl && !avatarLoadFailed ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.fullName}
+                  className="w-full h-full object-cover"
+                  onError={() => setAvatarLoadFailed(true)}
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                userInitial
+              )}
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-bold leading-none">{user.fullName}</div>
+              <div className="text-[10px] opacity-70 uppercase font-bold tracking-tighter mt-1">
+                {user.professions.join(' • ') || 'Identity User'}
+              </div>
             </div>
           </div>
-          <button 
-            onClick={onLogout}
-            className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center transition-all"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="h-10 px-3 bg-white/10 border border-white/20 hover:bg-white/20 rounded-xl flex items-center justify-center gap-1.5 transition-all hover:scale-105"
+                title="Account options"
+              >
+                <LogOut className="w-4 h-4" />
+                <ChevronDown className="w-4 h-4 opacity-80" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 rounded-xl border-[#c5d3f7]">
+              <DropdownMenuItem
+                className="font-semibold text-[#1f3f87] focus:bg-[#eef2ff] focus:text-[#1f3f87]"
+                onClick={onLogout}
+              >
+                <LogOut className="w-4 h-4" />
+                Sign out
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="font-semibold text-rose-600 focus:bg-rose-50 focus:text-rose-700"
+                onClick={() => {
+                  const confirmed = window.confirm(
+                    'Delete account permanently? This will remove your profile and uploaded data.'
+                  );
+                  if (confirmed) onDeleteAccount();
+                }}
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete account
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </nav>
@@ -119,11 +175,14 @@ const NavButton = ({
   label: string;
   className?: string;
 }) => (
-  <button 
+  <button
     onClick={onClick}
-    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all font-bold text-sm ${className ?? ''} ${
-      active ? 'bg-white/20 text-white shadow-inner' : 'text-white/60 hover:text-white hover:bg-white/5'
+    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 font-bold text-sm border ${className ?? ''} ${
+      active
+        ? 'bg-white text-[#1f3f87] border-white/70 shadow-[0_8px_16px_rgba(17,24,39,0.2)]'
+        : 'text-white/80 border-transparent hover:text-white hover:bg-white/12 hover:border-white/25'
     }`}
+    aria-current={active ? 'page' : undefined}
   >
     {icon}
     {label}

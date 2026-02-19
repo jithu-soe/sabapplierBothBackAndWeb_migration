@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { UserProfile, Profession } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ import {
   Filter, 
   Eye, 
   Trash2,
-  ExternalLink 
+  ExternalLink
 } from 'lucide-react';
 import { processVaultDocument } from '@/lib/api';
 import { uploadUserDocument } from '@/firebase/storage';
@@ -42,6 +43,7 @@ interface VaultProps {
 
 export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser }) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [processingDoc, setProcessingDoc] = useState<string | null>(null);
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
 
@@ -55,7 +57,7 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
 
   const getVaultCategories = () => {
     const cats: Record<string, string[]> = {
-      'Personal Identity': ['Aadhaar Card', 'PAN Card', 'Voter ID', 'Passport Photo'],
+      'Personal Identity': ['Aadhaar Card', 'PAN Card', 'Voter ID', 'Passport Photo', 'Signature'],
     };
 
     user.professions.forEach(p => {
@@ -68,6 +70,9 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
   const categories = getVaultCategories();
   const allCategoryTitles = Object.keys(categories);
   const activeDocs = selectedCategory ? categories[selectedCategory] : Object.values(categories).flat();
+  const filteredDocs = activeDocs.filter((doc) =>
+    doc.toLowerCase().includes(searchQuery.trim().toLowerCase())
+  );
 
   const handleFileUpload = async (docType: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -128,31 +133,36 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
             <p className="text-muted-foreground">Manage and verify your identity credentials</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input 
-                placeholder="Search documents..." 
-                className="pl-9 pr-4 py-2 bg-white border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5c75b8]" />
+              <input
+                placeholder="Search documents..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-white/95 border border-[#c5d3f7] rounded-2xl text-sm text-[#1f3f87] placeholder:text-[#90a0c8] focus:outline-none focus:ring-2 focus:ring-[#2F56C0]/30 focus:border-[#6a84c7] transition-all shadow-sm hover:shadow"
               />
             </div>
           </div>
         </header>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-          {activeDocs.map(doc => {
+          {filteredDocs.map(doc => {
             const data = user.documents[doc];
             const isProcessing = processingDoc === doc;
             const isUploaded = !!data;
 
             return (
-              <Card key={doc} className="p-6 relative group border-2 border-transparent hover:border-primary/20 transition-all flex flex-col justify-between min-h-[220px]">
+              <Card
+                key={doc}
+                className="p-6 relative group dashboard-card border-2 border-transparent hover:border-[#c5d3f7] hover:-translate-y-1 hover:shadow-xl transition-all duration-300 flex flex-col justify-between min-h-[220px] rounded-2xl"
+              >
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <div className="p-2 bg-secondary rounded-lg">
-                      <FileUp className="w-5 h-5 text-primary" />
+                    <div className="p-2.5 bg-gradient-to-br from-[#eef2ff] to-[#dfe7ff] rounded-xl border border-[#c5d3f7] shadow-sm">
+                      <FileUp className="w-5 h-5 text-[#2F56C0]" />
                     </div>
                     {isUploaded && (
-                      <div className="px-2 py-1 bg-green-50 text-green-700 text-[10px] font-bold uppercase rounded-md flex items-center gap-1">
+                      <div className="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase rounded-md flex items-center gap-1 border border-emerald-100">
                         <FileCheck className="w-3 h-3" /> Verified
                       </div>
                     )}
@@ -171,7 +181,7 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="flex-1 rounded-lg gap-2"
+                        className="flex-1 rounded-xl gap-2"
                         onClick={() => setViewingDoc(doc)}
                       >
                         <Eye className="w-4 h-4" /> View
@@ -179,7 +189,7 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="flex-1 rounded-lg text-destructive hover:text-destructive gap-2"
+                        className="flex-1 rounded-xl text-destructive hover:text-destructive gap-2 border-rose-200/70 hover:bg-rose-50"
                         onClick={() => handleRemove(doc)}
                       >
                         <Trash2 className="w-4 h-4" /> Remove
@@ -188,8 +198,8 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
                   ) : (
                     <label className="block">
                       <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => handleFileUpload(doc, e)} />
-                      <div className="w-full py-3 bg-secondary/50 border-2 border-dashed border-border rounded-xl text-center cursor-pointer hover:bg-secondary transition-all">
-                        <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Upload File</span>
+                      <div className="w-full py-3 bg-[#eef2ff] border-2 border-dashed border-[#c5d3f7] rounded-xl text-center cursor-pointer hover:bg-[#dfe7ff] hover:border-[#aebfe9] transition-all duration-300 group-hover:shadow-sm">
+                        <span className="text-xs font-bold text-[#2F56C0] uppercase tracking-widest">Upload File</span>
                       </div>
                     </label>
                   )}
@@ -198,18 +208,30 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
             );
           })}
         </div>
+        {filteredDocs.length === 0 && (
+          <Card className="dashboard-card rounded-2xl p-10 text-center">
+            <p className="text-sm font-semibold text-primary">
+              No documents found for "{searchQuery}".
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Try another name or clear search to see all documents.
+            </p>
+          </Card>
+        )}
       </div>
 
-      <aside className="space-y-6">
-        <Card className="p-6">
+      <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+        <Card className="p-6 dashboard-card rounded-2xl">
           <h4 className="text-sm font-black text-primary uppercase tracking-widest mb-6 flex items-center gap-2">
             <Filter className="w-4 h-4" /> Categories
           </h4>
           <div className="space-y-2">
             <button 
               onClick={() => setSelectedCategory(null)}
-              className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                !selectedCategory ? 'bg-primary text-white' : 'hover:bg-secondary'
+              className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${
+                !selectedCategory
+                  ? 'bg-[#2F56C0] text-white shadow-[0_8px_18px_rgba(47,86,192,0.32)]'
+                  : 'hover:bg-[#eef2ff] hover:text-[#2F56C0] hover:translate-x-1'
               }`}
             >
               All Categories
@@ -218,8 +240,10 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
               <button 
                 key={title}
                 onClick={() => setSelectedCategory(title)}
-                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                  selectedCategory === title ? 'bg-primary text-white' : 'hover:bg-secondary'
+                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${
+                  selectedCategory === title
+                    ? 'bg-[#2F56C0] text-white shadow-[0_8px_18px_rgba(47,86,192,0.32)]'
+                    : 'hover:bg-[#eef2ff] hover:text-[#2F56C0] hover:translate-x-1'
                 }`}
               >
                 {title}
@@ -228,14 +252,28 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
           </div>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-primary to-[#2d3f5f] text-white">
-          <div className="text-4xl font-black mb-1">
-            {Math.round((Object.keys(user.documents).length / activeDocs.length) * 100) || 0}%
+        <Card className="p-6 bg-gradient-to-br from-[#3f67d1] via-[#2F56C0] to-[#284aa8] text-white border-none rounded-2xl shadow-[0_14px_30px_rgba(47,86,192,0.35)] relative overflow-hidden">
+          <div className="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-white/15 blur-md" />
+          <div className="absolute -left-10 -bottom-10 w-28 h-28 rounded-full bg-white/10 blur-md" />
+          <div className="relative flex items-start justify-between mb-2">
+            <div className="text-4xl font-black">
+              {Math.round((Object.keys(user.documents).length / activeDocs.length) * 100) || 0}%
+            </div>
+            <div className="w-9 h-9 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center overflow-hidden shadow-sm">
+              <div className="relative w-5 h-5 rounded-md overflow-hidden">
+                <Image
+                  src="/logo.jpeg"
+                  alt="SabApplier"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            </div>
           </div>
-          <div className="text-[10px] font-bold opacity-60 uppercase tracking-widest mb-4">Vault Completion</div>
-          <Progress 
-            value={(Object.keys(user.documents).length / activeDocs.length) * 100} 
-            className="h-1 bg-white/10" 
+          <div className="text-[10px] font-bold opacity-85 uppercase tracking-widest mb-4">Vault Completion</div>
+          <Progress
+            value={(Object.keys(user.documents).length / activeDocs.length) * 100}
+            className="h-1.5 bg-white/25 [&>div]:bg-gradient-to-r [&>div]:from-emerald-300 [&>div]:to-green-500"
           />
         </Card>
       </aside>
@@ -295,14 +333,14 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
                   </div>
                 </div>
 
-                <div className="p-6 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                <div className="p-6 bg-[#eef2ff]/70 rounded-2xl border border-[#c5d3f7]">
                   <div className="flex items-start gap-4">
-                    <div className="p-3 bg-white rounded-xl shadow-sm text-blue-600">
+                    <div className="p-3 bg-white rounded-xl shadow-sm text-[#2F56C0]">
                       <FileCheck className="w-5 h-5" />
                     </div>
                     <div className="space-y-1">
-                      <div className="text-sm font-black text-blue-900">Verified by Sabapplier AI</div>
-                      <p className="text-xs text-blue-700/80 font-medium leading-relaxed">
+                      <div className="text-sm font-black text-[#1f3f87]">Verified by Sabapplier AI</div>
+                      <p className="text-xs text-[#4d67a6] font-medium leading-relaxed">
                         This document has been securely scanned and verified against your core identity profile.
                       </p>
                     </div>

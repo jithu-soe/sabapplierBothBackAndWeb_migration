@@ -67,3 +67,8 @@ export async function uploadToFirebaseStorage(input: {
 
   return { fileUrl, storagePath };
 }
+
+export async function deleteUserStorageData(userId: string): Promise<void> {
+  const bucket = await getAdminBucket();
+  await bucket.deleteFiles({ prefix: `users/${userId}/` });
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { UserProfile } from '@/lib/types';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 import { Navbar } from '@/components/dashboard/Navbar';
@@ -9,7 +10,7 @@ import { Vault } from '@/components/dashboard/Vault';
 import { Profile } from '@/components/dashboard/Profile';
 import { Button } from '@/components/ui/button';
 import { Shield, Sparkles, Loader2 } from 'lucide-react';
-import { authWithGoogleCode, fetchProfile, saveProfile } from '@/lib/api';
+import { authWithGoogleCode, deleteProfile, fetchProfile, saveProfile } from '@/lib/api';
 import { isFirebaseConfigured } from '@/firebase/config';
 import LandingPage from '@/components/landing/LandingPage';
 
@@ -34,12 +35,15 @@ declare global {
 }
 
 export default function App() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'home' | 'documents' | 'sharing' | 'profile'>('home');
   const [token, setToken] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isGoogleClientReady, setIsGoogleClientReady] = useState(false);
   const codeClientRef = useRef<{ requestCode: () => void } | null>(null);
+  const hasAutoLoginTriggeredRef = useRef(false);
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   useEffect(() => {
@@ -97,6 +101,31 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const syncTokenFromStorage = () => {
+      const stored = localStorage.getItem(TOKEN_KEY);
+      if (stored !== token) {
+        setToken(stored);
+      }
+    };
+
+    syncTokenFromStorage();
+    const intervalId = window.setInterval(syncTokenFromStorage, 1500);
+    const onFocus = () => syncTokenFromStorage();
+    const onAuthSync = () => syncTokenFromStorage();
+
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('sabapplier-auth-sync', onAuthSync as EventListener);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('sabapplier-auth-sync', onAuthSync as EventListener);
+    };
+  }, [token]);
+
+  useEffect(() => {
     if (!token) {
       setProfile(null);
       return;
@@ -135,16 +164,25 @@ export default function App() {
     };
   }, [token]);
 
-  const handleLogin = async () => {
-    if (!googleClientId) {
-      console.error('Google OAuth config missing. Add NEXT_PUBLIC_GOOGLE_CLIENT_ID.');
-      return;
-    }
-    if (!codeClientRef.current) {
-      console.error('Google OAuth client not ready yet.');
-      return;
-    }
+  useEffect(() => {
+    if (hasAutoLoginTriggeredRef.current) return;
+    if (loading || token || profile) return;
+    if (!isGoogleClientReady || !codeClientRef.current) return;
+
+    const authParam = searchParams.get('auth');
+    if (authParam !== 'google') return;
+
+    hasAutoLoginTriggeredRef.current = true;
     codeClientRef.current.requestCode();
+  }, [isGoogleClientReady, loading, profile, searchParams, token]);
+
+  const handleLogin = () => {
+    router.push('/signin');
+  };
+
+  const handleSignup = () => {
+    if (typeof window === 'undefined') return;
+    window.location.href = '/signup';
   };
 
   const handleLogout = async () => {
@@ -165,6 +203,23 @@ export default function App() {
       localStorage.removeItem('sabapplier_extension_logout_timestamp');
     }, 5000);
 
+    setToken(null);
+    setProfile(null);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!token) return;
+    try {
+      await deleteProfile(token);
+    } catch (error) {
+      console.error('Failed to delete account', error);
+      return;
+    }
+
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem('sabapplier_extension_jwt');
+    localStorage.removeItem('sabapplier_extension_user');
+    localStorage.removeItem('sabapplier_extension_sync_timestamp');
     setToken(null);
     setProfile(null);
   };
@@ -196,7 +251,7 @@ export default function App() {
   }
 
   if (!token || !profile) {
-    return <LandingPage onLogin={handleLogin} />;
+    return <LandingPage onLogin={handleLogin} onSignup={handleSignup} />;
   }
 
   if (!profile.onboardingComplete) {
@@ -211,12 +266,13 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen dashboard-shell">
       <Navbar
         user={profile}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onLogout={handleLogout}
+        onDeleteAccount={handleDeleteAccount}
       />
 
       <main className="max-w-7xl mx-auto p-6 md:p-10">
@@ -227,7 +283,7 @@ export default function App() {
         {activeTab === 'profile' && <Profile user={profile} saveUser={persistUser} />}
         {activeTab === 'sharing' && (
           <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center">
+            <div className="w-16 h-16 dashboard-muted-card rounded-2xl flex items-center justify-center">
               <Sparkles className="w-8 h-8 text-blue-500" />
             </div>
             <h2 className="text-2xl font-black text-primary">Data Sharing Coming Soon</h2>
@@ -238,7 +294,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="max-w-7xl mx-auto px-6 py-10 border-t flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+      <footer className="max-w-7xl mx-auto px-6 py-10 border-t border-blue-100 flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] font-bold text-[#1f3f7a]/70 uppercase tracking-widest">
         <div className="flex items-center gap-2">
           <Shield className="w-4 h-4" /> Sabapplier AI Identity Vault
         </div>

@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 interface HeroProps {
-    onLogin: () => void;
+    onSignup: () => void;
 }
 
-const Hero: React.FC<HeroProps> = ({ onLogin }) => {
+const Hero: React.FC<HeroProps> = ({ onSignup }) => {
     return (
         <section className="relative bg-white text-gray-900 overflow-hidden min-h-screen flex items-center pt-20 lg:pt-0">
             <div className="relative max-w-7xl mx-auto px-4 w-full flex items-center">
@@ -36,7 +36,7 @@ const Hero: React.FC<HeroProps> = ({ onLogin }) => {
 
                         <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center mb-12">
                             <button
-                                onClick={onLogin}
+                                onClick={onSignup}
                                 className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl"
                             >
                                 Get Started Free

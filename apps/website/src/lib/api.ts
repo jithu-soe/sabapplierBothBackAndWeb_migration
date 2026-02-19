@@ -53,6 +53,15 @@ export async function saveProfile(token: string, data: Partial<UserProfile>): Pr
   });
 }
 
+export async function deleteProfile(token: string): Promise<{ success: boolean }> {
+  return apiRequest('/profile', {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 export async function saveOnboardingStep(
   token: string,
   pageData: Partial<UserProfile>,

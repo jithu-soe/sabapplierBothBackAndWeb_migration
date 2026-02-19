@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { UserProfile, Profession, QUALIFICATIONS, CATEGORIES, RELIGIONS, STATES, LANGUAGES } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,8 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { ChevronRight, ChevronLeft, Check, ShieldCheck } from 'lucide-react';
-import { DocumentUpload } from './DocumentUpload';
+import { ChevronRight, ChevronLeft, Check } from 'lucide-react';
 
 interface OnboardingWizardProps {
   userId: string;
@@ -19,10 +18,16 @@ interface OnboardingWizardProps {
   saveUser: (user: UserProfile) => void;
 }
 
-export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ userId, authToken, user, saveUser }) => {
-  const currentStep = user.onboardingStep;
-  const TOTAL_STEPS = 4;
+export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUser }) => {
+  const TOTAL_STEPS = 3;
+  const currentStep = Math.min(user.onboardingStep || 1, TOTAL_STEPS);
   const progress = (currentStep / TOTAL_STEPS) * 100;
+
+  useEffect(() => {
+    if ((user.onboardingStep || 1) > TOTAL_STEPS && !user.onboardingComplete) {
+      saveUser({ ...user, onboardingStep: TOTAL_STEPS });
+    }
+  }, [user, saveUser]);
 
   const validateStep = () => {
     if (currentStep === 1) {
@@ -33,10 +38,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ userId, auth
     }
     if (currentStep === 3) {
       return !!(user.nationality && user.domicileState && user.district && user.pincode);
-    }
-    if (currentStep === 4) {
-      // Step 4 is optional for onboarding completion.
-      return true;
     }
     return false;
   };
@@ -55,19 +56,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ userId, auth
     if (currentStep > 1) {
       saveUser({ ...user, onboardingStep: currentStep - 1 });
     }
-  };
-
-  const handleDocumentUpdate = (docType: string, url?: string, aiData?: any) => {
-    const updatedDocs = { ...user.documents };
-    const existing = updatedDocs[docType];
-    updatedDocs[docType] = {
-      fileUrl: url || existing?.fileUrl || '',
-      extractedData: aiData || existing?.extractedData || null,
-      status: aiData ? 'verified' : 'processing',
-      uploadedAt: existing?.uploadedAt || new Date().toISOString(),
-      processedAt: aiData ? new Date().toISOString() : existing?.processedAt,
-    };
-    saveUser({ ...user, documents: updatedDocs });
   };
 
   return (
@@ -286,77 +274,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ userId, auth
                   <Label>Pincode *</Label>
                   <Input placeholder="6-digit PIN" maxLength={6} value={user.pincode || ''} onChange={(e) => saveUser({ ...user, pincode: e.target.value })} />
                 </div>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 4 && (
-            <div className="space-y-8">
-              <div className="text-center space-y-2 mb-6">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <ShieldCheck className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold text-primary">Upload Verification Documents</h3>
-                <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                  These documents help us automatically fill 80% of application forms.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <DocumentUpload
-                  userId={userId}
-                  authToken={authToken}
-                  label="Passport Size Photo *"
-                  docType="passport_photo"
-                  currentUrl={user.documents?.['passport_photo']?.fileUrl}
-                  onUploadComplete={(url) => handleDocumentUpdate('passport_photo', url)}
-                  onExtractionComplete={(data) => handleDocumentUpdate('passport_photo', undefined, data)}
-                />
-                <DocumentUpload
-                  userId={userId}
-                  authToken={authToken}
-                  label="Aadhaar Card *"
-                  docType="aadhaar_card"
-                  currentUrl={user.documents?.['aadhaar_card']?.fileUrl}
-                  onUploadComplete={(url) => handleDocumentUpdate('aadhaar_card', url)}
-                  onExtractionComplete={(data) => handleDocumentUpdate('aadhaar_card', undefined, data)}
-                />
-                <DocumentUpload
-                  userId={userId}
-                  authToken={authToken}
-                  label="Signature"
-                  docType="signature"
-                  currentUrl={user.documents?.['signature']?.fileUrl}
-                  onUploadComplete={(url) => handleDocumentUpdate('signature', url)}
-                  onExtractionComplete={(data) => handleDocumentUpdate('signature', undefined, data)}
-                />
-                <DocumentUpload
-                  userId={userId}
-                  authToken={authToken}
-                  label="PAN Card"
-                  docType="pan_card"
-                  currentUrl={user.documents?.['pan_card']?.fileUrl}
-                  onUploadComplete={(url) => handleDocumentUpdate('pan_card', url)}
-                  onExtractionComplete={(data) => handleDocumentUpdate('pan_card', undefined, data)}
-                />
-                <DocumentUpload
-                  userId={userId}
-                  authToken={authToken}
-                  label="10th Marksheet"
-                  docType="10th_marksheet"
-                  currentUrl={user.documents?.['10th_marksheet']?.fileUrl}
-                  onUploadComplete={(url) => handleDocumentUpdate('10th_marksheet', url)}
-                  onExtractionComplete={(data) => handleDocumentUpdate('10th_marksheet', undefined, data)}
-                />
-                <DocumentUpload
-                  userId={userId}
-                  authToken={authToken}
-                  label="12th Marksheet"
-                  docType="12th_marksheet"
-                  currentUrl={user.documents?.['12th_marksheet']?.fileUrl}
-                  onUploadComplete={(url) => handleDocumentUpdate('12th_marksheet', url)}
-                  onExtractionComplete={(data) => handleDocumentUpdate('12th_marksheet', undefined, data)}
-                />
               </div>
             </div>
           )}

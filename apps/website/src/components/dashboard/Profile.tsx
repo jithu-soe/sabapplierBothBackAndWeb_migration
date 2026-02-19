@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { UserProfile, Profession, QUALIFICATIONS, CATEGORIES, RELIGIONS, STATES, LANGUAGES } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Mail, ShieldCheck, Edit3, Save, X, Phone, MapPin, Briefcase, GraduationCap, Check } from 'lucide-react';
+import { User, Mail, ShieldCheck, Edit3, Save, MapPin, Briefcase, GraduationCap, Check, FileCheck2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,11 @@ interface ProfileProps {
 export const Profile: React.FC<ProfileProps> = ({ user, saveUser }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedUser, setEditedUser] = useState<UserProfile>(user);
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
+
+  useEffect(() => {
+    setAvatarLoadFailed(false);
+  }, [user.avatarUrl]);
 
   const handleSave = () => {
     saveUser({
@@ -44,16 +49,25 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser }) => {
     }
   };
 
+  const personalDocuments = [
+    { label: 'Passport Size Photo', keys: ['passport_photo', 'Passport Photo'] },
+    { label: 'Aadhaar Card', keys: ['aadhaar_card', 'Aadhaar Card'] },
+    { label: 'Signature', keys: ['signature', 'Signature'] },
+    { label: 'PAN Card', keys: ['pan_card', 'PAN Card'] },
+    { label: '10th Marksheet', keys: ['10th_marksheet', '10th Marksheet'] },
+    { label: '12th Marksheet', keys: ['12th_marksheet', '12th Marksheet'] },
+  ];
+
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col items-center text-center space-y-6">
-        <Badge variant="outline" className="px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 border-blue-100 flex items-center gap-2">
+        <Badge variant="outline" className="px-4 py-1.5 rounded-full bg-slate-50 text-primary border-slate-200 flex items-center gap-2">
           <User className="w-3 h-3" /> Profile Settings
         </Badge>
         
         <div className="space-y-2">
           <h1 className="text-5xl font-black text-primary tracking-tighter">
-            My <span className="text-blue-600">Profile</span>
+            My <span className="text-[#2F56C0]">Profile</span>
           </h1>
           <p className="text-muted-foreground font-medium text-lg">
             Manage your personal information and account settings
@@ -73,12 +87,22 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-8">
-          <Card className="p-8 relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-1 bg-blue-500" />
+          <Card className="p-8 relative overflow-hidden group dashboard-card">
+            <div className="absolute top-0 left-0 w-full h-1 bg-[#2F56C0]" />
             <div className="flex flex-col items-center text-center space-y-6">
               <div className="relative">
-                <div className="w-32 h-32 bg-primary rounded-[3rem] flex items-center justify-center text-5xl font-black text-white shadow-2xl">
-                  {user.firstName?.[0]}
+                <div className="w-32 h-32 bg-primary rounded-[3rem] flex items-center justify-center text-5xl font-black text-white shadow-2xl overflow-hidden">
+                  {user.avatarUrl && !avatarLoadFailed ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt={user.fullName}
+                      className="w-full h-full object-cover"
+                      onError={() => setAvatarLoadFailed(true)}
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    user.firstName?.[0]
+                  )}
                 </div>
                 <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-white flex items-center justify-center">
                   <ShieldCheck className="w-4 h-4 text-white" />
@@ -97,7 +121,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser }) => {
             </div>
           </Card>
 
-          <Card className="p-8 space-y-6">
+          <Card className="p-8 space-y-6 dashboard-card">
             <h4 className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Core Stats</h4>
             <div className="space-y-4">
               <StatItem label="Verified Documents" value={Object.keys(user.documents).length} />
@@ -109,11 +133,36 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser }) => {
 
         <div className="lg:col-span-2 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <DetailSection title="Basic Bio & Contact" icon={<Mail className="w-5 h-5 text-blue-500" />}>
+            <DetailSection title="Basic Bio & Contact" icon={<Mail className="w-5 h-5 text-[#2F56C0]" />}>
               <DetailItem label="Full Name" value={`${user.firstName} ${user.middleName || ''} ${user.lastName}`} />
               <DetailItem label="Date of Birth" value={user.dob} />
               <DetailItem label="Phone Number" value={user.phone} />
               <DetailItem label="Permanent Address" value={user.permanentAddress} />
+              <div className="space-y-2 pt-2">
+                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Personal Documents</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {personalDocuments.map((doc) => {
+                    const matchedDoc = doc.keys.map((key) => user.documents?.[key]).find(Boolean);
+                    const isUploaded = Boolean(matchedDoc?.fileUrl);
+                    return (
+                      <div
+                        key={doc.label}
+                        className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs font-semibold ${
+                          isUploaded
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                            : 'bg-slate-50 border-slate-200 text-slate-500'
+                        }`}
+                      >
+                        <span>{doc.label}</span>
+                        <span className="inline-flex items-center gap-1">
+                          {isUploaded && <FileCheck2 className="w-3 h-3" />}
+                          {isUploaded ? 'Uploaded' : 'Pending'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </DetailSection>
 
             <DetailSection title="Identity & Education" icon={<GraduationCap className="w-5 h-5 text-purple-500" />}>
@@ -126,7 +175,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser }) => {
             <DetailSection title="Professional Roles" icon={<Briefcase className="w-5 h-5 text-green-500" />}>
               <div className="flex flex-wrap gap-2 pt-2">
                 {user.professions.map(p => (
-                  <Badge key={p} className="bg-secondary text-primary hover:bg-secondary font-bold px-3 py-1 rounded-lg border-none">
+                  <Badge key={p} className="bg-slate-100 text-primary hover:bg-slate-200 font-bold px-3 py-1 rounded-lg border border-slate-200">
                     {p}
                   </Badge>
                 ))}
@@ -286,7 +335,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser }) => {
             <Button variant="outline" onClick={() => setIsEditing(false)} className="h-12 px-8 rounded-xl font-bold">
               Cancel
             </Button>
-            <Button onClick={handleSave} className="h-12 px-8 rounded-xl font-bold gap-2 shadow-lg shadow-primary/20">
+            <Button onClick={handleSave} className="h-12 px-8 rounded-xl font-bold gap-2 shadow-lg shadow-[#2F56C0]/30">
               <Save className="w-4 h-4" /> Save Changes
             </Button>
           </div>
@@ -304,7 +353,7 @@ const StatItem = ({ label, value }: { label: string; value: string | number }) =
 );
 
 const DetailSection = ({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) => (
-  <Card className="p-8 space-y-6">
+  <Card className="p-8 space-y-6 dashboard-card">
     <h3 className="text-lg font-black text-primary flex items-center gap-2">
       {icon} {title}
     </h3>

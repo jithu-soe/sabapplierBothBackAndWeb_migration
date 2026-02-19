@@ -4,8 +4,8 @@ import { config } from './config';
 import { issueJwt, verifyJwt } from './auth';
 import { exchangeCodeForGoogleIdentity, verifyGoogleCredential } from './google';
 import { initDb } from './db';
-import { getUser, getUserByGoogleId, patchUser, upsertUser } from './store';
-import { uploadToFirebaseStorage } from './storage';
+import { deleteUser, getUser, getUserByGoogleId, patchUser, upsertUser } from './store';
+import { deleteUserStorageData, uploadToFirebaseStorage } from './storage';
 import { AuthJwtPayload, UserDocument, UserProfile } from './types';
 import { authGoogleSchema, onboardSchema, processVaultSchema, profilePatchSchema, uploadVaultSchema } from './validation';
 
@@ -38,7 +38,7 @@ function setCorsHeaders(req: IncomingMessage, res: ServerResponse): void {
   }
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
 }
 
 function setSecurityHeaders(res: ServerResponse): void {
@@ -257,6 +257,29 @@ const server = createServer(async (req, res) => {
           return;
         }
         sendJson(req, res, 200, { user: patched });
+        return;
+      }
+
+      if (method === 'DELETE') {
+        const current = await getUser(auth.userId);
+        if (!current) {
+          sendJson(req, res, 404, { error: 'User profile not found' });
+          return;
+        }
+
+        try {
+          await deleteUserStorageData(auth.userId);
+        } catch (error) {
+          logWarn('Failed to cleanup user storage data', { requestId, userId: auth.userId });
+        }
+
+        const deleted = await deleteUser(auth.userId);
+        if (!deleted) {
+          sendJson(req, res, 500, { error: 'Failed to delete account' });
+          return;
+        }
+
+        sendJson(req, res, 200, { success: true });
         return;
       }
     }

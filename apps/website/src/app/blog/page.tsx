@@ -12,7 +12,7 @@ const BlogPage = () => {
     const router = useRouter();
     const [selectedCategory, setSelectedCategory] = useState('All');
 
-    const categories = ['All', 'Form Guides', 'Product Updates', 'Video Vlogs', 'Product Tips', 'Core Problem & Awareness Blogs', 'Product & Technology Blogs'];
+    const categories = ['All', 'Form Guides', 'Product Updates', 'Use Case & Story Blogs', 'Product Tips', 'Core Problem & Awareness Blogs', 'Product & Technology Blogs'];
 
     const filteredPosts = selectedCategory === 'All'
         ? blogPosts
@@ -48,7 +48,7 @@ const BlogPage = () => {
                 </div>
 
                 {/* Categories */}
-                <div className="flex flex-wrapjustify-center gap-4 mb-12 overflow-x-auto pb-4 justify-center">
+                <div className="flex flex-wrap justify-center gap-3 mb-10">
                     {categories.map((category, index) => (
                         <motion.button
                             key={category}
@@ -56,7 +56,7 @@ const BlogPage = () => {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: index * 0.05 }}
                             onClick={() => setSelectedCategory(category)}
-                            className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap
+                            className={`px-4 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all duration-300 whitespace-nowrap
                 ${selectedCategory === category
                                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-105'
                                     : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 hover:border-blue-200'

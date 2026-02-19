@@ -3,10 +3,10 @@
 import React from 'react';
 
 interface CTAProps {
-    onLogin: () => void;
+    onSignup: () => void;
 }
 
-const CTA: React.FC<CTAProps> = ({ onLogin }) => {
+const CTA: React.FC<CTAProps> = ({ onSignup }) => {
     return (
         <section className="py-12 bg-white relative overflow-hidden">
             <div className="relative max-w-4xl mx-auto px-4 text-center">
@@ -19,7 +19,7 @@ const CTA: React.FC<CTAProps> = ({ onLogin }) => {
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
                     <button
-                        onClick={onLogin}
+                        onClick={onSignup}
                         className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
                     >
                         Start Free Today

@@ -162,3 +162,20 @@ export async function patchUser(userId: string, patch: Partial<UserProfile>): Pr
   if (result.rowCount === 0) return null;
   return mapRowToProfile(result.rows[0] as any);
 }
+
+export async function deleteUser(userId: string): Promise<boolean> {
+  if (!isDbEnabled()) {
+    const store = await readStore();
+    if (!store[userId]) return false;
+    delete store[userId];
+    await writeStore(store);
+    return true;
+  }
+
+  const result = await query(
+    `DELETE FROM app_users
+     WHERE user_id = $1`,
+    [userId]
+  );
+  return result.rowCount > 0;
+}

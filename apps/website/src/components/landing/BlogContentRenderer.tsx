@@ -8,7 +8,7 @@ interface BlogContentRendererProps {
 }
 
 interface ContentElement {
-    type: 'paragraph' | 'h2' | 'h3' | 'emoji-heading' | 'list-start' | 'list-item' | 'list-end' | 'table';
+    type: 'paragraph' | 'h2' | 'h3' | 'emoji-heading' | 'list-start' | 'list-item' | 'list-end' | 'table' | 'hr';
     content?: string;
     rows?: string[][];
 }
@@ -34,6 +34,17 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                     elements.push({ type: 'paragraph', content: currentParagraph.join(' ') });
                     currentParagraph = [];
                 }
+                inList = false;
+                return;
+            }
+
+            // Horizontal rule
+            if (trimmedLine === '---') {
+                if (currentParagraph.length > 0) {
+                    elements.push({ type: 'paragraph', content: currentParagraph.join(' ') });
+                    currentParagraph = [];
+                }
+                elements.push({ type: 'hr' });
                 inList = false;
                 return;
             }
@@ -80,8 +91,8 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                 inTable = false;
             }
 
-            // Check for list items
-            if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+            // Check for list items (bulleted or numbered)
+            if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ') || /^\d+\.\s+/.test(trimmedLine)) {
                 if (currentParagraph.length > 0) {
                     elements.push({ type: 'paragraph', content: currentParagraph.join(' ') });
                     currentParagraph = [];
@@ -90,7 +101,10 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                     elements.push({ type: 'list-start' });
                     inList = true;
                 }
-                elements.push({ type: 'list-item', content: trimmedLine.substring(2) });
+                const contentWithoutMarker = trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')
+                    ? trimmedLine.substring(2)
+                    : trimmedLine.replace(/^\d+\.\s+/, '');
+                elements.push({ type: 'list-item', content: contentWithoutMarker });
                 return;
             } else if (inList) {
                 elements.push({ type: 'list-end' });
@@ -133,6 +147,45 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
     const elements = processContent(content);
     let listItems: string[] = [];
     let listKey = 0;
+
+    const renderInline = (text: string) => {
+        // First split on links [label](url)
+        // Important: inner URL group is non-capturing so split doesn't emit a separate raw "https://..." segment.
+        const linkRegex = /(\[[^\]]+\]\((?:https?:\/\/[^\s)]+)\))/g;
+        const segments = text.split(linkRegex);
+
+        return segments.map((segment, idx) => {
+            const match = segment.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);
+            if (match) {
+                const label = match[1];
+                const href = match[2];
+                return (
+                    <a
+                        key={`link-${idx}`}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 font-semibold underline decoration-blue-300 hover:text-blue-800"
+                    >
+                        {label}
+                    </a>
+                );
+            }
+
+            // Handle bold inside non-link text
+            const boldParts = segment.split(/(\*\*.*?\*\*)/g);
+            return boldParts.map((part, pIdx) => {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                    return (
+                        <strong key={`b-${idx}-${pIdx}`} className="font-bold text-gray-900">
+                            {part.slice(2, -2)}
+                        </strong>
+                    );
+                }
+                return <span key={`t-${idx}-${pIdx}`}>{part}</span>;
+            });
+        });
+    };
 
     return (
         <div className="blog-content space-y-6 text-gray-800">
@@ -183,27 +236,12 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                             </div>
                         );
                     case 'paragraph':
-                        // Check if paragraph contains bold text or special formatting
-                        const hasBold = element.content?.includes('**');
                         // Check if it's an introductory paragraph (first paragraph after heading)
                         const isIntro = index > 0 && elements[index - 1]?.type === 'h2';
 
-                        if (hasBold && element.content) {
-                            const parts = element.content.split(/(\*\*.*?\*\*)/g);
-                            return (
-                                <p key={index} className={`${isIntro ? 'text-xl text-gray-800 leading-relaxed font-medium mb-6' : 'text-lg text-gray-700 leading-relaxed'} first:mt-0`}>
-                                    {parts.map((part, pIdx) => {
-                                        if (part.startsWith('**') && part.endsWith('**')) {
-                                            return <strong key={pIdx} className="font-bold text-gray-900">{part.slice(2, -2)}</strong>;
-                                        }
-                                        return <span key={pIdx}>{part}</span>;
-                                    })}
-                                </p>
-                            );
-                        }
                         return (
                             <p key={index} className={`${isIntro ? 'text-xl text-gray-800 leading-relaxed font-medium mb-6' : 'text-lg text-gray-700 leading-relaxed'} first:mt-0`}>
-                                {element.content}
+                                {element.content ? renderInline(element.content) : null}
                             </p>
                         );
                     case 'list-start':
@@ -231,17 +269,14 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                                             ✓
                                         </span>
                                         <span className="flex-1 group-hover:text-gray-900 transition-colors">
-                                            {item.split(/(\*\*.*?\*\*)/g).map((part, pIdx) => {
-                                                if (part.startsWith('**') && part.endsWith('**')) {
-                                                    return <strong key={pIdx} className="font-bold text-gray-900">{part.slice(2, -2)}</strong>;
-                                                }
-                                                return <span key={pIdx}>{part}</span>;
-                                            })}
+                                            {renderInline(item)}
                                         </span>
                                     </motion.li>
                                 ))}
                             </ul>
                         );
+                    case 'hr':
+                        return <hr key={index} className="my-10 border-t border-gray-200" />;
                     case 'table':
                         if (!element.rows || element.rows.length === 0) return null;
                         const headers = element.rows[0];
