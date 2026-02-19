@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { UserProfile } from '@/lib/types';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
@@ -34,7 +34,7 @@ declare global {
   }
 }
 
-export default function App() {
+function AppContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'home' | 'documents' | 'sharing' | 'profile'>('home');
@@ -305,5 +305,19 @@ export default function App() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <Loader2 className="w-10 h-10 text-primary animate-spin" />
+        </div>
+      }
+    >
+      <AppContent />
+    </Suspense>
   );
 }
