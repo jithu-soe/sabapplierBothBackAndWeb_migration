@@ -19,13 +19,16 @@ const BlogPage = () => {
         : blogPosts.filter(post => post.category === selectedCategory);
 
     const handleLogin = () => {
-        // Implement login redirect or modal trigger
-        console.log('Login clicked');
+        router.push('/signin');
+    };
+
+    const handleSignup = () => {
+        router.push('/signup');
     };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 font-sans text-gray-900">
-            <LandingNavbar onLogin={handleLogin} />
+            <LandingNavbar onLogin={handleLogin} onSignup={handleSignup} />
 
             <div className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
                 {/* Header Section */}

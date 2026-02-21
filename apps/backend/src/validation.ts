@@ -1,13 +1,14 @@
 import { z } from 'zod';
 
 const documentSchema = z.object({
-  fileUrl: z.string().min(1),
+  fileUrl: z.string().min(1).optional(),
   storagePath: z.string().optional(),
   extractedData: z.record(z.string(), z.unknown()).nullable().optional(),
   status: z.enum(['idle', 'processing', 'verified', 'rejected']),
   uploadedAt: z.string(),
   processedAt: z.string().optional(),
   error: z.string().optional(),
+  folder: z.string().optional(),
 });
 
 export const authGoogleSchema = z

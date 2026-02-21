@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Menu, X } from 'lucide-react';
 
@@ -13,6 +14,8 @@ interface LandingNavbarProps {
 const LandingNavbar: React.FC<LandingNavbarProps> = ({ onLogin, onSignup }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const pathname = usePathname();
+    const router = useRouter();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -23,6 +26,12 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({ onLogin, onSignup }) => {
     }, []);
 
     const scrollToSection = (sectionId: string) => {
+        if (pathname !== '/') {
+            router.push(`/#${sectionId}`);
+            setIsMenuOpen(false);
+            return;
+        }
+
         const element = document.getElementById(sectionId);
         if (element) {
             element.scrollIntoView({

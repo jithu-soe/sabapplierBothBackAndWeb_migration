@@ -27,8 +27,11 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
     const popularPosts = blogPosts.filter((p) => p.featured && p.id !== postId).slice(0, 5);
 
     const handleLogin = () => {
-        // Implement login redirect or modal trigger
-        console.log('Login clicked');
+        router.push('/signin');
+    };
+
+    const handleSignup = () => {
+        router.push('/signup');
     };
 
     const handleShare = () => {
@@ -46,7 +49,7 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-gray-900">
-            <LandingNavbar onLogin={handleLogin} />
+            <LandingNavbar onLogin={handleLogin} onSignup={handleSignup} />
 
             <main className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
                 <button

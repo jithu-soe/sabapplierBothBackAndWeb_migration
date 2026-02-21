@@ -12,10 +12,9 @@ interface NavbarProps {
   activeTab: string;
   setActiveTab: (tab: 'home' | 'documents' | 'sharing' | 'profile') => void;
   onLogout: () => void;
-  onDeleteAccount: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ user, activeTab, setActiveTab, onLogout, onDeleteAccount }) => {
+export const Navbar: React.FC<NavbarProps> = ({ user, activeTab, setActiveTab, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   const userInitial = user.firstName?.[0] || user.fullName?.[0] || 'U';
@@ -136,23 +135,18 @@ export const Navbar: React.FC<NavbarProps> = ({ user, activeTab, setActiveTab, o
             <DropdownMenuContent align="end" className="w-48 rounded-xl border-[#c5d3f7]">
               <DropdownMenuItem
                 className="font-semibold text-[#1f3f87] focus:bg-[#eef2ff] focus:text-[#1f3f87]"
-                onClick={onLogout}
+                onClick={() => setActiveTab('profile')}
               >
-                <LogOut className="w-4 h-4" />
-                Sign out
+                <User className="w-4 h-4" />
+                Profile
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="font-semibold text-rose-600 focus:bg-rose-50 focus:text-rose-700"
-                onClick={() => {
-                  const confirmed = window.confirm(
-                    'Delete account permanently? This will remove your profile and uploaded data.'
-                  );
-                  if (confirmed) onDeleteAccount();
-                }}
+                onClick={onLogout}
               >
-                <Trash2 className="w-4 h-4" />
-                Delete account
+                <LogOut className="w-4 h-4" />
+                Sign out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

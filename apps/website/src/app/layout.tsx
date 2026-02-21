@@ -6,6 +6,11 @@ import { Toaster } from '@/components/ui/toaster';
 export const metadata: Metadata = {
   title: 'Sabapplier AI - Identity Vault',
   description: 'Your Single Source of Truth for personal identity and documents.',
+  icons: {
+    icon: '/logo.jpeg',
+    shortcut: '/logo.jpeg',
+    apple: '/logo.jpeg',
+  },
 };
 
 export default function RootLayout({

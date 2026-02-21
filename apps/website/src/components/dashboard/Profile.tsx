@@ -8,23 +8,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Mail, ShieldCheck, Edit3, Save, MapPin, Briefcase, GraduationCap, Check, FileCheck2 } from 'lucide-react';
+import { User, Mail, ShieldCheck, Edit3, Save, MapPin, Briefcase, GraduationCap, Check, FileCheck2, Settings, Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
 
 interface ProfileProps {
   user: UserProfile;
   saveUser: (user: UserProfile) => void;
+  onDeleteAccount: () => void;
 }
 
-export const Profile: React.FC<ProfileProps> = ({ user, saveUser }) => {
+export const Profile: React.FC<ProfileProps> = ({ user, saveUser, onDeleteAccount }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editedUser, setEditedUser] = useState<UserProfile>(user);
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
 
@@ -74,15 +77,59 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser }) => {
           </p>
         </div>
 
-        <Button 
-          onClick={() => {
-            setEditedUser(user);
-            setIsEditing(true);
-          }}
-          className="h-12 px-8 rounded-2xl text-lg font-bold shadow-xl shadow-primary/20 flex items-center gap-3 transition-transform hover:scale-105"
-        >
-          <Edit3 className="w-5 h-5" /> Edit Profile
-        </Button>
+        <div className="flex items-center gap-4">
+          <Button 
+            onClick={() => {
+              setEditedUser(user);
+              setIsEditing(true);
+            }}
+            className="h-12 px-8 rounded-2xl text-lg font-bold shadow-xl shadow-primary/20 flex items-center gap-3 transition-transform hover:scale-105"
+          >
+            <Edit3 className="w-5 h-5" /> Edit Profile
+          </Button>
+
+          <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="h-12 px-6 rounded-2xl text-lg font-bold border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-2"
+              >
+                <Settings className="w-5 h-5" /> Settings
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md p-6 rounded-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold">Profile Settings</DialogTitle>
+                <DialogDescription>
+                  Manage your account preferences and data.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="pt-4 space-y-4">
+                <div className="p-4 rounded-xl bg-red-50 border border-red-100 space-y-3">
+                  <div className="flex items-center gap-2 text-red-700 font-bold">
+                    <Trash2 className="w-4 h-4" /> Danger Zone
+                  </div>
+                  <p className="text-xs text-red-600/80 leading-relaxed">
+                    Permanently delete your account and all associated data. This action cannot be undone.
+                  </p>
+                  <Button 
+                    variant="destructive" 
+                    className="w-full font-bold"
+                    onClick={() => {
+                      const confirmed = window.confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.');
+                      if (confirmed) {
+                        onDeleteAccount();
+                        setIsSettingsOpen(false);
+                      }
+                    }}
+                  >
+                    Delete Account
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

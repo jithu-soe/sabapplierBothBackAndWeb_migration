@@ -42,7 +42,8 @@ export interface UserProfile {
     error?: string;
     uploadedAt: string;
     processedAt?: string;
-    status: 'idle' | 'processing' | 'verified' | 'rejected' 
+    status: 'idle' | 'processing' | 'verified' | 'rejected';
+    folder?: string;
   }>;
 }
 

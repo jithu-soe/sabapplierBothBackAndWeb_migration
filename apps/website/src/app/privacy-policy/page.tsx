@@ -2,10 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FiArrowLeft, FiMail, FiGlobe } from 'react-icons/fi';
 import LandingNavbar from '@/components/landing/LandingNavbar';
 import Footer from '@/components/landing/Footer'; // Adjust import path if needed, Footer.tsx is in src/components/landing/
-import { useAuth } from '@/input_processing/auth_provider'; // Assuming auth provider exists or we pass null
+//import { useAuth } from '@/input_processing/auth_provider'; // Assuming auth provider exists or we pass null
 // Actually LandingNavbar takes onLogin. Retrieve onLogin from context or pass a dummy one if it just redirects?
 // In LandingPage.tsx, onLogin is passed from page.tsx.
 // For these static pages, maybe we just redirect to home for login?
@@ -14,13 +15,19 @@ import { useAuth } from '@/input_processing/auth_provider'; // Assuming auth pro
 // Actually, I can just not pass onLogin if it's optional, or pass a function that redirects to /.
 
 const PrivacyPolicy = () => {
+    const router = useRouter();
+
     const handleLogin = () => {
-        window.location.href = '/';
+        router.push('/signin');
+    };
+
+    const handleSignup = () => {
+        router.push('/signup');
     };
 
     return (
         <div className="min-h-screen bg-gray-50 font-sans">
-            <LandingNavbar onLogin={handleLogin} />
+            <LandingNavbar onLogin={handleLogin} onSignup={handleSignup} />
 
             {/* Main Content */}
             <main className="max-w-4xl mx-auto px-4 py-24"> {/* Added padding-top for fixed navbar */}

@@ -1,132 +1,145 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { UserProfile } from '@/lib/types';
-import { Card } from '@/components/ui/card';
-import { User, MapPin, Briefcase, Award, Clock, TrendingUp } from 'lucide-react';
+import React from 'react';
+import Footer from '@/components/landing/Footer';
 
-export const Home: React.FC<{ user: UserProfile }> = ({ user }) => {
-  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
+// Hardcoded official exam portals for competitive exams
+export const defaultApplications = [
+  {
+    id: 1,
+    title: "IBPS (Institute of Banking Personnel Selection)",
+    officialLink: "https://www.ibps.in/",
+    category: "Banking",
+  },
+  {
+    id: 2,
+    title: "RRB (Railway Recruitment Board)",
+    officialLink: "https://www.rrbapply.gov.in/#/auth/landing",
+    category: "Railways",
+  },
+  {
+    id: 3,
+    title: "SSC (Staff Selection Commission)",
+    officialLink: "https://ssc.gov.in/",
+    category: "Government",
+  },
+  {
+    id: 4,
+    title: "UPSC (Union Public Service Commission)",
+    officialLink: "https://upsconline.nic.in/",
+    category: "Government",
+  },
+  {
+    id: 5,
+    title: "SBI (State Bank of India)",
+    officialLink: "https://sbi.co.in/web/careers/Current-openings",
+    category: "Banking",
+  },
+  {
+    id: 6,
+    title: "NTA (National Testing Agency)",
+    officialLink: "https://www.nta.ac.in/",
+    category: "Testing Agency",
+  },
+  {
+    id: 7,
+    title: "State PSC (State Public Service Commissions)",
+    officialLink: "https://www.freejobalert.com/latest-notifications/#google_vignette",
+    category: "State Government",
+  },
+];
 
-  useEffect(() => {
-    setAvatarLoadFailed(false);
-  }, [user.avatarUrl]);
+interface HomeProps {
+  applications?: typeof defaultApplications;
+  loadingExams?: boolean;
+  user?: any;
+}
 
-  const getProfileStrength = () => {
-    let score = 0;
-    if (user.firstName && user.lastName) score += 20;
-    if (user.phone) score += 10;
-    if (user.permanentAddress) score += 10;
-    if (user.professions.length > 0) score += 20;
-    if (user.domicileState) score += 10;
-    score += Math.min(30, Object.keys(user.documents).length * 10);
-    return score;
-  };
-
-  const strength = getProfileStrength();
+export const Home: React.FC<HomeProps> = ({ applications = defaultApplications, loadingExams = false }) => {
+  // Loading skeleton for 7 official portals
+  const LoadingSkeleton = () => (
+    <div className="animate-pulse">
+      <div className="bg-white rounded-lg shadow-md border border-blue-100 p-3 h-32" />
+    </div>
+  );
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <header className="flex flex-col md:flex-row gap-8 items-start justify-between">
-        <div className="flex gap-6 items-center">
-          <div className="w-24 h-24 bg-gradient-to-br from-[#2F56C0] to-[#284aa8] text-white rounded-[2rem] flex items-center justify-center text-4xl font-black shadow-2xl overflow-hidden">
-            {user.avatarUrl && !avatarLoadFailed ? (
-              <img
-                src={user.avatarUrl}
-                alt={user.fullName || 'User'}
-                className="w-full h-full object-cover"
-                onError={() => setAvatarLoadFailed(true)}
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              user.firstName?.[0]
-            )}
-          </div>
-          <div>
-            <h1 className="text-4xl font-black text-primary tracking-tight">Welcome, {user.firstName}</h1>
-            <p className="text-muted-foreground font-medium flex items-center gap-2">
-              <MapPin className="w-4 h-4" /> {user.district}, {user.domicileState}
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200">
+      <main className="max-w-6xl mx-auto px-4 py-8">
+        {/* Hero Section */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-blue-900 mb-2 font-sans tracking-tight drop-shadow-sm" style={{letterSpacing: '0.01em'}}>
+            Welcome to <span className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-2 py-1 rounded shadow-sm inline-flex items-center gap-2">
+              SabApplier AI
+            </span>
+          </h1>
+          <p className="text-lg text-gray-600 mb-4 font-medium">
+            Your Trusted Exam Form Assistant
+          </p>
+          <p className="text-base text-gray-500 mb-8 max-w-xl mx-auto">
+            Streamline your exam applications with AI-powered automation, secure document management, and verified official links.
+          </p>
+          {/* Extension Download Button (unchanged, but with Chrome icon) */}
+          <div className="mb-12">
+            <a
+              href="https://chromewebstore.google.com/detail/pbokcepmfdenanohfjfgkilcpgceohhl?utm_source=item-share-cb"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200"
+            >
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 48 48"><g><circle fill="#fff" cx="24" cy="24" r="21"/><path fill="#ea4335" d="M23.5 22.7V9.2c4.2 0 8.1 1.7 11 4.4l-4.7 8.1c-1.7-1.6-4-2.6-6.3-2.6z"/><path fill="#4285f4" d="M23.5 38.8c-6.2 0-11.5-5.1-11.5-11.5 0-2.1.6-4.1 1.6-5.8l9.9 5.7v11.6z"/><path fill="#fbbc04" d="M35.2 13.6c3.1 2.9 5.1 7 5.1 11.7h-11.8l6.7-11.7z"/><path fill="#34a853" d="M23.5 38.8c4.2 0 8.1-1.7 11-4.4l-4.7-8.1c-1.7 1.6-4 2.6-6.3 2.6v9.9z"/><path fill="#fbbc04" d="M12.8 34.4c-3.1-2.9-5.1-7-5.1-11.7h11.8l-6.7 11.7z"/></g></svg>
+              Get Our Extension
+            </a>
           </div>
         </div>
-
-        <Card className="p-6 w-full md:w-80 bg-gradient-to-br from-white to-[#eef2ff] border border-[#c5d3f7] shadow-xl rounded-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-[#eef2ff] border border-[#c5d3f7] flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-[#2F56C0]" />
-              </div>
-              <span className="text-xs font-black uppercase text-muted-foreground tracking-widest">Profile Strength</span>
+        {/* Divider for spacing and theme match */}
+        <div className="w-full flex justify-center mb-12">
+          <div className="h-1 w-32 bg-gradient-to-r from-blue-200 via-blue-400 to-blue-200 rounded-full opacity-70"></div>
+        </div>
+        {/* Competitive Exams Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l8 4v5c0 5.25-3.5 10-8 12-4.5-2-8-6.75-8-12V7l8-4z" />
+            </svg>
+            Competitive Exams
+          </h2>
+          {loadingExams ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(7)].map((_, idx) => <LoadingSkeleton key={idx} />)}
             </div>
-            <span className="text-lg font-black text-[#2F56C0]">{strength}%</span>
-          </div>
-          <div className="h-3 w-full bg-emerald-100 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-emerald-400 to-green-500 rounded-full transition-all duration-1000 ease-out"
-              style={{ width: `${strength}%` }}
-            />
-          </div>
-          <p className="mt-3 text-xs text-[#5b75b8] font-medium">
-            Keep adding verified details to reach 100% profile completion.
-          </p>
-        </Card>
-      </header>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <Card className="p-8 space-y-6 dashboard-card rounded-2xl hover:shadow-md transition-all duration-300">
-          <h3 className="text-lg font-black text-primary flex items-center gap-2">
-            <User className="w-5 h-5 text-[#2F56C0]" /> Basic Identity
-          </h3>
-          <div className="space-y-4">
-            <InfoField label="Full Name" value={`${user.firstName} ${user.middleName || ''} ${user.lastName}`} />
-            <InfoField label="DOB" value={user.dob} />
-            <InfoField label="Phone" value={user.phone} />
-            <InfoField label="Mother Tongue" value={user.motherTongue} />
-          </div>
-        </Card>
-
-        <Card className="p-8 space-y-6 dashboard-card rounded-2xl hover:shadow-md transition-all duration-300">
-          <h3 className="text-lg font-black text-primary flex items-center gap-2">
-            <Briefcase className="w-5 h-5 text-purple-500" /> Professional
-          </h3>
-          <div className="space-y-4">
-            <InfoField label="Qualification" value={user.highestQualification} />
-            <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Professions</span>
-              <div className="flex flex-wrap gap-2 pt-1">
-                {user.professions.map(p => (
-                  <span key={p} className="px-3 py-1 bg-slate-100 text-primary text-xs font-bold rounded-lg border border-slate-200">{p}</span>
-                ))}
-              </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(applications || []).map((app) => (
+                <a
+                  key={app.id}
+                  href={app.officialLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block rounded-2xl shadow-md bg-white border border-blue-100 hover:shadow-xl hover:border-blue-400 hover:scale-[1.025] transition-all duration-200 p-6 group focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  style={{ textDecoration: 'none' }}
+                  aria-label={`Go to ${app.title} official form site`}
+                >
+                  <div className="flex items-center mb-2">
+                    {/* Shield Icon for Security */}
+                    <svg className="w-8 h-8 text-blue-600 mr-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l8 4v5c0 5.25-3.5 10-8 12-4.5-2-8-6.75-8-12V7l8-4z" />
+                    </svg>
+                    <span className="text-lg font-semibold text-gray-900 font-sans">{app.title}</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                      {app.category} <span className="ml-2">🔒</span>
+                    </span>
+                    <span className="text-xs text-green-600 font-medium ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">Secure link verified ✅</span>
+                  </div>
+                </a>
+              ))}
             </div>
-          </div>
-        </Card>
-
-        <Card className="p-8 space-y-6 dashboard-card rounded-2xl hover:shadow-md transition-all duration-300">
-          <h3 className="text-lg font-black text-primary flex items-center gap-2">
-            <Award className="w-5 h-5 text-green-500" /> Active Applications
-          </h3>
-          <div className="space-y-4 empty:after:content-['No_active_applications'] empty:after:text-xs empty:after:text-muted-foreground">
-            {/* Simulation of future features */}
-            <div className="p-4 dashboard-muted-card rounded-xl flex items-center gap-4">
-              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">🚀</div>
-              <div>
-                <div className="text-sm font-bold">Passport Verification</div>
-                <div className="text-[10px] text-muted-foreground font-bold flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> Updated 2d ago
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
+          )}
+        </div>
+      </main>
+      <Footer />
     </div>
   );
 };
-
-const InfoField = ({ label, value }: { label: string; value?: string }) => (
-  <div className="space-y-1">
-    <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{label}</span>
-    <div className="text-sm font-bold text-primary truncate">{value || 'Not provided'}</div>
-  </div>
-);

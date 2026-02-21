@@ -3,13 +3,14 @@ export type Profession = 'Student' | 'Professional' | 'Founder' | 'Researcher' |
 export type DocumentStatus = 'idle' | 'processing' | 'verified' | 'rejected';
 
 export interface UserDocument {
-  fileUrl: string;
+  fileUrl?: string;
   storagePath?: string;
   extractedData?: Record<string, unknown> | null;
   status: DocumentStatus;
   uploadedAt: string;
   processedAt?: string;
   error?: string;
+  folder?: string;
 }
 
 export interface UserProfile {

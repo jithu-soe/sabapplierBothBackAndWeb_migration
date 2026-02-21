@@ -177,12 +177,19 @@ function AppContent() {
   }, [isGoogleClientReady, loading, profile, searchParams, token]);
 
   const handleLogin = () => {
-    router.push('/signin');
+    if (codeClientRef.current) {
+      codeClientRef.current.requestCode();
+    } else {
+      router.push('/signin');
+    }
   };
 
   const handleSignup = () => {
-    if (typeof window === 'undefined') return;
-    window.location.href = '/signup';
+    if (codeClientRef.current) {
+      codeClientRef.current.requestCode();
+    } else {
+      router.push('/signup');
+    }
   };
 
   const handleLogout = async () => {
@@ -272,7 +279,6 @@ function AppContent() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onLogout={handleLogout}
-        onDeleteAccount={handleDeleteAccount}
       />
 
       <main className="max-w-7xl mx-auto p-6 md:p-10">
@@ -280,7 +286,7 @@ function AppContent() {
         {activeTab === 'documents' && (
           <Vault userId={profile.userId} authToken={token} user={profile} saveUser={persistUser} />
         )}
-        {activeTab === 'profile' && <Profile user={profile} saveUser={persistUser} />}
+        {activeTab === 'profile' && <Profile user={profile} saveUser={persistUser} onDeleteAccount={handleDeleteAccount} />}
         {activeTab === 'sharing' && (
           <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
             <div className="w-16 h-16 dashboard-muted-card rounded-2xl flex items-center justify-center">

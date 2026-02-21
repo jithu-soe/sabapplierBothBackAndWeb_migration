@@ -14,7 +14,11 @@ import {
   Filter, 
   Eye, 
   Trash2,
-  ExternalLink
+  ExternalLink,
+  Plus,
+  FolderPlus,
+  FilePlus,
+  Folder
 } from 'lucide-react';
 import { processVaultDocument } from '@/lib/api';
 import { uploadUserDocument } from '@/firebase/storage';
@@ -24,7 +28,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogTrigger,
+  DialogFooter
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -46,22 +55,72 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
   const [searchQuery, setSearchQuery] = useState('');
   const [processingDoc, setProcessingDoc] = useState<string | null>(null);
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
+  const [isAddFolderOpen, setIsAddFolderOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [customFolders, setCustomFolders] = useState<string[]>([]);
+  const [isAddDocOpen, setIsAddDocOpen] = useState(false);
+  const [newDocName, setNewDocName] = useState('');
+  const [newDocFolder, setNewDocFolder] = useState('');
 
   const professionMap: Record<Profession, string[]> = {
-    'Student': ['Resume', '10th Marksheet', '12th Marksheet', 'Caste Certificate'],
+    'Student': ['Resume', '10th Marksheet', '12th Marksheet', 'University Degree', 'University Marksheet', 'Caste Certificate'],
     'Professional': ['Offer Letter', 'Salary Slips', 'Experience Letter', 'Employee ID'],
     'Founder': ['Pitchdeck', 'GST Certificate', 'Incorporation Certificate', 'DPIIT Recognition'],
     'Researcher': ['Publications', 'PhD Certificate', 'Research Proposal'],
     'Other': ['Birth Certificate', 'Marriage Certificate']
   };
 
+  const getStudentDocuments = (): string[] => {
+    const baseDocuments = ['Resume', 'Caste Certificate'];
+    const qualification = user.highestQualification?.toLowerCase() || '';
+    
+    // Add documents based on qualification level
+    if (qualification.includes('10') || qualification === '10th' || qualification === 'tenth') {
+      return [...baseDocuments, '10th Marksheet'];
+    }
+    if (qualification.includes('12') || qualification === '12th' || qualification === 'twelfth') {
+      return [...baseDocuments, '10th Marksheet', '12th Marksheet'];
+    }
+    // Graduate, Post Graduate, or any higher qualification
+    if (qualification.includes('graduate') || qualification.includes('degree') || qualification.includes('bachelor') || qualification.includes('master') || qualification.includes('phd')) {
+      return [...baseDocuments, '10th Marksheet', '12th Marksheet', 'University Degree', 'University Marksheet'];
+    }
+    // Default to full list if qualification not set
+    return professionMap['Student'];
+  };
+
   const getVaultCategories = () => {
     const cats: Record<string, string[]> = {
-      'Personal Identity': ['Aadhaar Card', 'PAN Card', 'Voter ID', 'Passport Photo', 'Signature'],
+      'Personal Identity': ['Aadhaar Card', 'PAN Card', 'Voter ID', 'Driving Licence', 'Passport Photo', 'Signature'],
     };
 
     user.professions.forEach(p => {
-      cats[`${p} Documents`] = professionMap[p];
+      if (p === 'Student') {
+        cats[`${p} Documents`] = getStudentDocuments();
+      } else {
+        cats[`${p} Documents`] = professionMap[p];
+      }
+    });
+
+    // Add documents that have a 'folder' property
+    if (user.documents) {
+      Object.entries(user.documents).forEach(([docName, docData]) => {
+        if (docData.folder) {
+          if (!cats[docData.folder]) {
+            cats[docData.folder] = [];
+          }
+          if (!cats[docData.folder].includes(docName)) {
+            cats[docData.folder].push(docName);
+          }
+        }
+      });
+    }
+    
+    // Add empty custom folders
+    customFolders.forEach(folder => {
+        if (!cats[folder]) {
+            cats[folder] = [];
+        }
     });
 
     return cats;
@@ -70,9 +129,52 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
   const categories = getVaultCategories();
   const allCategoryTitles = Object.keys(categories);
   const activeDocs = selectedCategory ? categories[selectedCategory] : Object.values(categories).flat();
-  const filteredDocs = activeDocs.filter((doc) =>
+  
+  // Filter duplicates in activeDocs if any
+  const uniqueActiveDocs = Array.from(new Set(activeDocs));
+
+  const filteredDocs = uniqueActiveDocs.filter((doc) =>
     doc.toLowerCase().includes(searchQuery.trim().toLowerCase())
   );
+
+  const handleCreateFolder = () => {
+    if (newFolderName && !allCategoryTitles.includes(newFolderName)) {
+        setCustomFolders([...customFolders, newFolderName]);
+        setNewFolderName('');
+        setIsAddFolderOpen(false);
+    }
+  };
+
+  const handleCreateCustomDoc = () => {
+      if (newDocName && newDocFolder) {
+          // We don't actually create the doc until upload, but we need to track it in UI?
+          // For now, let's just add it to the 'user.documents' with a placeholder status if needed, 
+          // OR, simpler: We just need to know it exists.
+          // BUT, our current architecture relies on 'user.documents' keys for upload status.
+          // The issue is: The 'placeholders' are derived from categories.
+          // So if we add it to a category (folder), it will show up.
+          
+          // Wait, 'categories' is derived function. We need to persist this new document placeholder.
+          // Since we don't have a separate 'placeholders' DB table, we can add a 'dummy' entry to user.documents
+          // with status 'idle' and the folder tag.
+          
+          const updatedDocs = {
+              ...user.documents,
+              [newDocName]: {
+                  fileUrl: '',
+                  status: 'idle' as const, // Cast strictly
+                  uploadedAt: new Date().toISOString(),
+                  folder: newDocFolder
+              }
+          };
+          saveUser({ ...user, documents: updatedDocs });
+          setNewDocName('');
+          setNewDocFolder('');
+          setIsAddDocOpen(false);
+          setSelectedCategory(newDocFolder);
+      }
+  };
+
 
   const handleFileUpload = async (docType: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,6 +182,10 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
 
     setProcessingDoc(docType);
     
+    // Check if this doc has a folder
+    const currentDoc = user.documents?.[docType];
+    const folder = currentDoc?.folder;
+
     const reader = new FileReader();
     reader.onload = async () => {
       const dataUri = reader.result as string;
@@ -103,6 +209,7 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
             status: processed.user.documents?.[normalizedDocType]?.status || 'verified',
             uploadedAt: processed.user.documents?.[normalizedDocType]?.uploadedAt || new Date().toISOString(),
             processedAt: processed.user.documents?.[normalizedDocType]?.processedAt,
+            folder: folder // Preserve the folder!
           }
         };
 
@@ -118,6 +225,8 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
 
   const handleRemove = (docType: string) => {
     const updatedDocs = { ...user.documents };
+    // Instead of deleting, if it's a custom doc (has folder), we might want to keep it as idle?
+    // Or just delete it. If user deletes a custom doc, it's gone.
     delete updatedDocs[docType];
     saveUser({ ...user, documents: updatedDocs });
   };
@@ -145,11 +254,81 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
           </div>
         </header>
 
+        <div className="flex gap-4">
+            <Dialog open={isAddFolderOpen} onOpenChange={setIsAddFolderOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline" className="gap-2 rounded-xl border-[#c5d3f7] text-[#2F56C0] hover:bg-[#eef2ff]">
+                        <FolderPlus className="w-4 h-4" /> Create Folder
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Create New Folder</DialogTitle>
+                        <DialogDescription>Organize your documents into custom categories.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Label>Folder Name</Label>
+                        <Input 
+                            value={newFolderName} 
+                            onChange={(e) => setNewFolderName(e.target.value)} 
+                            placeholder="e.g., Medical Records"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={handleCreateFolder} disabled={!newFolderName}>Create Folder</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isAddDocOpen} onOpenChange={setIsAddDocOpen}>
+                <DialogTrigger asChild>
+                    <Button className="gap-2 rounded-xl bg-[#2F56C0] hover:bg-[#284aa8]">
+                        <FilePlus className="w-4 h-4" /> Add Custom Document
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add Custom Document</DialogTitle>
+                        <DialogDescription>Create a placeholder for a new document.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label>Document Name</Label>
+                            <Input 
+                                value={newDocName} 
+                                onChange={(e) => setNewDocName(e.target.value)} 
+                                placeholder="e.g., MRI Scan Report"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Folder / Category</Label>
+                            <Select value={newDocFolder} onValueChange={setNewDocFolder}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a folder" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {allCategoryTitles.map(cat => (
+                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                    ))}
+                                    {customFolders.filter(f => !allCategoryTitles.includes(f)).map(f => (
+                                        <SelectItem key={f} value={f}>{f}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={handleCreateCustomDoc} disabled={!newDocName || !newDocFolder}>Add Document</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredDocs.map(doc => {
-            const data = user.documents[doc];
+            const data = user.documents?.[doc];
             const isProcessing = processingDoc === doc;
-            const isUploaded = !!data;
+            const isUploaded = !!data?.fileUrl; // Check fileUrl specifically
 
             return (
               <Card
@@ -168,7 +347,9 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
                     )}
                   </div>
                   <h4 className="font-bold text-primary mb-1">{doc}</h4>
-                  <p className="text-xs text-muted-foreground">Required for profile verification</p>
+                  <p className="text-xs text-muted-foreground">
+                      {data?.folder ? `In ${data.folder}` : 'Required for profile verification'}
+                  </p>
                 </div>
 
                 <div className="mt-6">
