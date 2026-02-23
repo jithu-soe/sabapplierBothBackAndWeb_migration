@@ -102,3 +102,11 @@ export const STATES = [
 export const LANGUAGES = [
   'Telugu', 'Hindi', 'English', 'Tamil', 'Kannada', 'Malayalam', 'Marathi', 'Bengali'
 ];
+
+export const MARITAL_STATUSES = [
+  'Single', 'Married', 'Divorced', 'Widowed', 'Other'
+];
+
+export const DISABILITY_OPTIONS = [
+  'No', 'Yes'
+];

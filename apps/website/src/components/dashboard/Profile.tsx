@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { UserProfile, Profession, QUALIFICATIONS, CATEGORIES, RELIGIONS, STATES, LANGUAGES } from '@/lib/types';
+import { UserProfile, Profession, QUALIFICATIONS, CATEGORIES, RELIGIONS, STATES, LANGUAGES, MARITAL_STATUSES, DISABILITY_OPTIONS } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -184,6 +184,8 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser, onDeleteAccoun
               <DetailItem label="Full Name" value={`${user.firstName} ${user.middleName || ''} ${user.lastName}`} />
               <DetailItem label="Date of Birth" value={user.dob} />
               <DetailItem label="Phone Number" value={user.phone} />
+              <DetailItem label="Father's Name" value={user.fatherName} />
+              <DetailItem label="Mother's Name" value={user.motherName} />
               <DetailItem label="Permanent Address" value={user.permanentAddress} />
               <div className="space-y-2 pt-2">
                 <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Personal Documents</span>
@@ -217,6 +219,9 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser, onDeleteAccoun
               <DetailItem label="Mother Tongue" value={user.motherTongue} />
               <DetailItem label="Highest Qualification" value={user.highestQualification} />
               <DetailItem label="Social Category" value={user.socialCategory} />
+              <DetailItem label="Religion" value={user.religion} />
+              <DetailItem label="Marital Status" value={user.maritalStatus} />
+              <DetailItem label="Disability Status" value={user.disabilityStatus} />
             </DetailSection>
 
             <DetailSection title="Professional Roles" icon={<Briefcase className="w-5 h-5 text-green-500" />}>
@@ -234,6 +239,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser, onDeleteAccoun
               <DetailItem label="Nationality" value={user.nationality} />
               <DetailItem label="Domicile State" value={user.domicileState} />
               <DetailItem label="District" value={user.district} />
+              <DetailItem label="Mandal" value={user.mandal} />
               <DetailItem label="Pincode" value={user.pincode} />
             </DetailSection>
           </div>
@@ -284,6 +290,14 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser, onDeleteAccoun
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Father's Name</Label>
+                  <Input value={editedUser.fatherName || ''} onChange={e => setEditedUser({...editedUser, fatherName: e.target.value})} className="h-12 rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Mother's Name</Label>
+                  <Input value={editedUser.motherName || ''} onChange={e => setEditedUser({...editedUser, motherName: e.target.value})} className="h-12 rounded-xl" />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label className="font-bold text-primary">Permanent Address</Label>
@@ -324,6 +338,39 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser, onDeleteAccoun
                     </SelectTrigger>
                     <SelectContent>
                       {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Religion</Label>
+                  <Select value={editedUser.religion} onValueChange={v => setEditedUser({...editedUser, religion: v})}>
+                    <SelectTrigger className="h-12 rounded-xl">
+                      <SelectValue placeholder="Select Religion" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RELIGIONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Marital Status</Label>
+                  <Select value={editedUser.maritalStatus} onValueChange={v => setEditedUser({...editedUser, maritalStatus: v})}>
+                    <SelectTrigger className="h-12 rounded-xl">
+                      <SelectValue placeholder="Select Marital Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MARITAL_STATUSES.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Disability Status</Label>
+                  <Select value={editedUser.disabilityStatus} onValueChange={v => setEditedUser({...editedUser, disabilityStatus: v})}>
+                    <SelectTrigger className="h-12 rounded-xl">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DISABILITY_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -369,6 +416,10 @@ export const Profile: React.FC<ProfileProps> = ({ user, saveUser, onDeleteAccoun
                 <div className="space-y-2">
                   <Label className="font-bold text-primary">District</Label>
                   <Input value={editedUser.district} onChange={e => setEditedUser({...editedUser, district: e.target.value})} className="h-12 rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-bold text-primary">Mandal</Label>
+                  <Input value={editedUser.mandal || ''} onChange={e => setEditedUser({...editedUser, mandal: e.target.value})} className="h-12 rounded-xl" />
                 </div>
                 <div className="space-y-2">
                   <Label className="font-bold text-primary">Pincode</Label>

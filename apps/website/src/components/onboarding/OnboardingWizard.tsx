@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import { UserProfile, Profession, QUALIFICATIONS, CATEGORIES, RELIGIONS, STATES, LANGUAGES } from '@/lib/types';
+import { UserProfile, Profession, QUALIFICATIONS, CATEGORIES, RELIGIONS, STATES, LANGUAGES, MARITAL_STATUSES, DISABILITY_OPTIONS } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -244,6 +244,28 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="space-y-2">
+                    <Label>Marital Status</Label>
+                    <Select value={user.maritalStatus} onValueChange={(v) => saveUser({ ...user, maritalStatus: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Marital Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MARITAL_STATUSES.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Disability Status</Label>
+                    <Select value={user.disabilityStatus} onValueChange={(v) => saveUser({ ...user, disabilityStatus: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DISABILITY_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
@@ -269,6 +291,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                 <div className="space-y-2">
                   <Label>District *</Label>
                   <Input placeholder="District" value={user.district || ''} onChange={(e) => saveUser({ ...user, district: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Mandal</Label>
+                  <Input placeholder="Mandal" value={user.mandal || ''} onChange={(e) => saveUser({ ...user, mandal: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label>Pincode *</Label>

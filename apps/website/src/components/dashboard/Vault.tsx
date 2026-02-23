@@ -133,6 +133,15 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
   // Filter duplicates in activeDocs if any
   const uniqueActiveDocs = Array.from(new Set(activeDocs));
 
+  // Vault completion: count only docs in CURRENT view (activeDocs) that are actually uploaded (have fileUrl)
+  const completedInActive = uniqueActiveDocs.filter(
+    (doc) => user.documents?.[doc]?.fileUrl
+  ).length;
+  const totalInActive = uniqueActiveDocs.length;
+  const vaultCompletionPercent = totalInActive > 0
+    ? Math.round((completedInActive / totalInActive) * 100)
+    : 0;
+
   const filteredDocs = uniqueActiveDocs.filter((doc) =>
     doc.toLowerCase().includes(searchQuery.trim().toLowerCase())
   );
@@ -438,7 +447,7 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
           <div className="absolute -left-10 -bottom-10 w-28 h-28 rounded-full bg-white/10 blur-md" />
           <div className="relative flex items-start justify-between mb-2">
             <div className="text-4xl font-black">
-              {Math.round((Object.keys(user.documents).length / activeDocs.length) * 100) || 0}%
+              {vaultCompletionPercent}%
             </div>
             <div className="w-9 h-9 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center overflow-hidden shadow-sm">
               <div className="relative w-5 h-5 rounded-md overflow-hidden">
@@ -451,9 +460,11 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
               </div>
             </div>
           </div>
-          <div className="text-[10px] font-bold opacity-85 uppercase tracking-widest mb-4">Vault Completion</div>
+          <div className="text-[10px] font-bold opacity-85 uppercase tracking-widest mb-4">
+            Vault Completion {selectedCategory ? `· ${selectedCategory}` : '· All'}
+          </div>
           <Progress
-            value={(Object.keys(user.documents).length / activeDocs.length) * 100}
+            value={vaultCompletionPercent}
             className="h-1.5 bg-white/25 [&>div]:bg-gradient-to-r [&>div]:from-emerald-300 [&>div]:to-green-500"
           />
         </Card>
