@@ -19,7 +19,8 @@ import {
   FolderPlus,
   FilePlus,
   Folder,
-  Sparkles
+  Sparkles,
+  Edit2
 } from 'lucide-react';
 import { processVaultDocument } from '@/lib/api';
 import { uploadUserDocument } from '@/firebase/storage';
@@ -45,12 +46,75 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const VAULT_TABS = [
-  { id: 'personal', label: 'Personal Identity', folder: 'Personal Identity', defaultDocs: ['Aadhaar Card', 'PAN Card', 'Passport Photo', 'Signature', 'Voter ID'] },
-  { id: 'student', label: 'Student / Opportunity Seeker', folder: 'Student / Opportunity Seeker', aliases: ['Student', 'Student Documents'], defaultDocs: ['Resume', 'Certificates', 'Marksheets', 'Caste Certificate', 'Left Thumb'] },
-  { id: 'founder', label: 'Founder', folder: 'Founder', aliases: ['Founder Documents'], defaultDocs: ['Pitch Deck', 'Incorporation Certificate', 'GST Certificate', 'Employee Docs'] },
-  { id: 'researcher', label: 'Researcher', folder: 'Researcher', aliases: ['Researcher Documents'], defaultDocs: ['Publications', 'Research Papers', 'Lab Certificates'] }
-];
+const getVaultTabs = (professions: string[] = []) => {
+  const base = [
+    { 
+      id: 'personal', 
+      label: 'Personal Identity', 
+      folder: 'Personal Identity', 
+      defaultDocs: [
+        'Aadhaar Card', 
+        'PAN Card', 
+        'Passport Photo', 
+        'Signature', 
+        'Voter ID',
+        'Driving Licence',
+        '10th Marksheet',
+        '12th Marksheet',
+        'Graduation/UG Certification',
+        'PG Certification'
+      ] 
+    },
+    { 
+      id: 'student', 
+      label: 'Student / Opportunity Seeker', 
+      folder: 'Student / Opportunity Seeker', 
+      aliases: ['Student', 'Student Documents'], 
+      defaultDocs: [
+        'Resume', 
+        '10th Certificate', 
+        'Caste Certificate', 
+        'Left Thumb',
+        'Passport Photo',
+        'Signature'
+      ] 
+    },
+  ];
+
+  const profession_tabs = [];
+  
+  if (professions.includes('Professional')) {
+    profession_tabs.push({
+      id: 'professional',
+      label: 'Professional',
+      folder: 'Professional',
+      aliases: ['Professional Documents'],
+      defaultDocs: ['Offer Letter', 'Experience Letter', 'Salary Slip']
+    });
+  }
+
+  if (professions.includes('Founder')) {
+    profession_tabs.push({
+      id: 'founder',
+      label: 'Founder',
+      folder: 'Founder',
+      aliases: ['Founder Documents'],
+      defaultDocs: ['Pitch Deck', 'DPIIT Certificate', 'Incorporation Certificate']
+    });
+  }
+
+  if (professions.includes('Researcher')) {
+    profession_tabs.push({
+      id: 'researcher',
+      label: 'Researcher',
+      folder: 'Researcher',
+      aliases: ['Researcher Documents'],
+      defaultDocs: ['Publications', 'Research Papers', 'Lab Certificates']
+    });
+  }
+
+  return [...base, ...profession_tabs];
+};
 
 interface VaultProps {
   userId: string;
@@ -72,6 +136,17 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
   const [newFolderName, setNewFolderName] = useState('');
   const [customFolders, setCustomFolders] = useState<string[]>([]);
   const [newDocFolder, setNewDocFolder] = useState('');
+  
+  // Rename/Delete State
+  const [isRenameFolderOpen, setIsRenameFolderOpen] = useState(false);
+  const [renamingFolderName, setRenamingFolderName] = useState('');
+  const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
+  const [isRenameDocOpen, setIsRenameDocOpen] = useState(false);
+  const [renamingDocName, setRenamingDocName] = useState('');
+  const [renamingDocId, setRenamingDocId] = useState<string | null>(null);
+
+  // Get VAULT_TABS based on user professions
+  const VAULT_TABS = getVaultTabs(user.professions || []);
 
   // Calculate all tabs (standard + custom)
   const standardFolderNames = VAULT_TABS.map(t => t.folder);
@@ -79,8 +154,9 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
   if (user.documents) {
     Object.values(user.documents).forEach(d => {
         // Check if folder is not standard and not an alias
-        if (d.folder && !standardFolderNames.includes(d.folder) && !VAULT_TABS.some(t => t.aliases?.includes(d.folder))) {
-            docFolders.add(d.folder);
+        const folder = d.folder;
+        if (folder && !standardFolderNames.includes(folder) && !VAULT_TABS.some(t => t.aliases && t.aliases.includes(folder))) {
+            docFolders.add(folder);
         }
     });
   }
@@ -103,10 +179,19 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
 
     const relevantFolders = [config.folder, ...(config.aliases || [])];
     const docs = new Set(config.defaultDocs);
+    
+    // Define shared documents that appear in multiple tabs
+    const sharedDocs = {
+      'student': ['Passport Photo', 'Signature'] // These also appear from Personal Identity
+    };
 
     if (user.documents) {
       Object.entries(user.documents).forEach(([docName, docData]) => {
         if (docData.folder && relevantFolders.includes(docData.folder)) {
+          docs.add(docName);
+        }
+        // Add shared documents from Personal Identity folder to other tabs
+        if (tabId in sharedDocs && sharedDocs[tabId as keyof typeof sharedDocs].includes(docName) && docData.folder === 'Personal Identity') {
           docs.add(docName);
         }
       });
@@ -232,6 +317,84 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
     }
   };
 
+  const handleRenameFolder = () => {
+    if (renamingFolderId && renamingFolderName && renamingFolderName !== renamingFolderId) {
+      const updatedFolders = customFolders.map(f => f === renamingFolderId ? renamingFolderName : f);
+      setCustomFolders(updatedFolders);
+      
+      // Update documents folder references
+      const updatedDocs = { ...user.documents };
+      Object.keys(updatedDocs).forEach(docName => {
+        if (updatedDocs[docName]?.folder === renamingFolderId) {
+          updatedDocs[docName] = { ...updatedDocs[docName], folder: renamingFolderName };
+        }
+      });
+      saveUser({ ...user, documents: updatedDocs });
+      
+      // Update activeTab if needed
+      if (activeTab === renamingFolderId.toLowerCase().replace(/\s+/g, '-')) {
+        const newId = renamingFolderName.toLowerCase().replace(/\s+/g, '-');
+        setActiveTab(newId);
+      }
+      
+      setRenamingFolderId(null);
+      setRenamingFolderName('');
+      setIsRenameFolderOpen(false);
+    }
+  };
+
+  const handleDeleteFolder = (folderName: string) => {
+    if (window.confirm(`Are you sure you want to delete the folder "${folderName}" and its documents?`)) {
+      // Remove from custom folders
+      setCustomFolders(customFolders.filter(f => f !== folderName));
+      
+      // Delete all documents in this folder
+      const updatedDocs = { ...user.documents };
+      Object.keys(updatedDocs).forEach(docName => {
+        if (updatedDocs[docName]?.folder === folderName) {
+          delete updatedDocs[docName];
+        }
+      });
+      saveUser({ ...user, documents: updatedDocs });
+      
+      // Reset to personal tab if delete folder is active
+      if (activeTab === folderName.toLowerCase().replace(/\s+/g, '-')) {
+        setActiveTab('personal');
+      }
+    }
+  };
+
+  const handleRenameDocument = () => {
+    if (renamingDocId && renamingDocName && renamingDocName !== renamingDocId) {
+      const updatedDocs = { ...user.documents };
+      if (updatedDocs[renamingDocId]) {
+        const docData = updatedDocs[renamingDocId];
+        delete updatedDocs[renamingDocId];
+        updatedDocs[renamingDocName] = docData;
+      }
+      saveUser({ ...user, documents: updatedDocs });
+      
+      setRenamingDocId(null);
+      setRenamingDocName('');
+      setIsRenameDocOpen(false);
+    }
+  };
+
+  const handleDeleteDocument = (docName: string) => {
+    if (window.confirm(`Are you sure you want to delete "${docName}"?`)) {
+      const updatedDocs = { ...user.documents };
+      delete updatedDocs[docName];
+      saveUser({ ...user, documents: updatedDocs });
+    }
+  };
+
+  const isCustomFolder = (folderName: string) => customFolders.includes(folderName);
+  
+  const isCustomDocument = (docName: string) => {
+    const config = allTabs.find(t => t.id === activeTab);
+    return config && !config.defaultDocs.includes(docName);
+  };
+
   const currentDocData = viewingDoc ? user.documents?.[viewingDoc] : null;
 
   return (
@@ -241,6 +404,11 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
         <p className="text-muted-foreground font-medium">
             Documents get resized, cropped, compressed and change file format according to the form requirements.
         </p>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-1">
+        <h3 className="font-semibold text-blue-900">Upload Documents</h3>
+        <p className="text-sm text-blue-800">We recommend uploading these documents for a smooth application process.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -258,13 +426,51 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8 bg-slate-100 p-1 rounded-xl h-auto">
-                {allTabs.map(tab => (
-                    <TabsTrigger key={tab.id} value={tab.id} className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all whitespace-normal h-auto py-3 px-2">
-                        {tab.label}
-                    </TabsTrigger>
-                ))}
-            </TabsList>
+            <div className="mb-8">
+                <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 bg-slate-100 p-1 rounded-xl h-auto gap-1">
+                    {allTabs.map(tab => {
+                        const isCustom = isCustomFolder(tab.label);
+                        return (
+                            <div key={tab.id} className="relative group">
+                                <TabsTrigger 
+                                    value={tab.id} 
+                                    className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all whitespace-normal h-auto py-3 px-2 w-full text-left"
+                                >
+                                    {tab.label}
+                                </TabsTrigger>
+                                {isCustom && (
+                                    <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 text-blue-600 hover:bg-blue-100 rounded"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setRenamingFolderId(tab.label);
+                                                setRenamingFolderName(tab.label);
+                                                setIsRenameFolderOpen(true);
+                                            }}
+                                        >
+                                            <Edit2 className="w-3 h-3" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 text-red-600 hover:bg-red-100 rounded"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteFolder(tab.label);
+                                            }}
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </TabsList>
+            </div>
             
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <h3 className="text-xl font-bold text-primary">{currentTabConfig.label}</h3>
@@ -339,6 +545,48 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
+
+                    <Dialog open={isRenameFolderOpen} onOpenChange={setIsRenameFolderOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Rename Folder</DialogTitle>
+                                <DialogDescription>Enter a new name for your folder.</DialogDescription>
+                            </DialogHeader>
+                            <div className="py-4">
+                                <Label>Folder Name</Label>
+                                <Input 
+                                    value={renamingFolderName} 
+                                    onChange={(e) => setRenamingFolderName(e.target.value)} 
+                                    placeholder="e.g., Medical Records"
+                                />
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsRenameFolderOpen(false)}>Cancel</Button>
+                                <Button onClick={handleRenameFolder} disabled={!renamingFolderName || renamingFolderName === renamingFolderId}>Rename</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    <Dialog open={isRenameDocOpen} onOpenChange={setIsRenameDocOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Rename Document</DialogTitle>
+                                <DialogDescription>Enter a new name for your document.</DialogDescription>
+                            </DialogHeader>
+                            <div className="py-4">
+                                <Label>Document Name</Label>
+                                <Input 
+                                    value={renamingDocName} 
+                                    onChange={(e) => setRenamingDocName(e.target.value)} 
+                                    placeholder="e.g., Bonafide Certificate"
+                                />
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setIsRenameDocOpen(false)}>Cancel</Button>
+                                <Button onClick={handleRenameDocument} disabled={!renamingDocName || renamingDocName === renamingDocId}>Rename</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
 
@@ -385,8 +633,8 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
                                         </div>
 
                                         <div className="flex flex-col gap-2">
-                                             {isUploaded && (
-                                                <div className="flex gap-1">
+                                            <div className="flex gap-1">
+                                                {isUploaded && (
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
@@ -395,16 +643,32 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </Button>
+                                                )}
+                                                {isCustomDocument(docType) && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                                                        onClick={() => {
+                                                            setRenamingDocId(docType);
+                                                            setRenamingDocName(docType);
+                                                            setIsRenameDocOpen(true);
+                                                        }}
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </Button>
+                                                )}
+                                                {isCustomDocument(docType) && (
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
                                                         className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                                                        onClick={() => handleRemove(docType)}
+                                                        onClick={() => handleDeleteDocument(docType)}
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </Button>
-                                                </div>
-                                             )}
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 
