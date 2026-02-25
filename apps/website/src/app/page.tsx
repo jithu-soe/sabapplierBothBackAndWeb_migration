@@ -114,13 +114,20 @@ function AppContent() {
     const intervalId = window.setInterval(syncTokenFromStorage, 1500);
     const onFocus = () => syncTokenFromStorage();
     const onAuthSync = () => syncTokenFromStorage();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === TOKEN_KEY || e.key === 'sabapplier_extension_jwt') {
+        syncTokenFromStorage();
+      }
+    };
 
     window.addEventListener('focus', onFocus);
+    window.addEventListener('storage', onStorage);
     window.addEventListener('sabapplier-auth-sync', onAuthSync as EventListener);
 
     return () => {
       window.clearInterval(intervalId);
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('storage', onStorage);
       window.removeEventListener('sabapplier-auth-sync', onAuthSync as EventListener);
     };
   }, [token]);

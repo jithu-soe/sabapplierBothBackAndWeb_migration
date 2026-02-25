@@ -23,21 +23,58 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
   const currentStep = Math.min(user.onboardingStep || 1, TOTAL_STEPS);
   const progress = (currentStep / TOTAL_STEPS) * 100;
 
+  // Local state to prevent input lag and API spam
+  const [localUser, setLocalUser] = React.useState<UserProfile>(user);
+  
+  // Update local state when prop changes, but only if not currently editing (optional logic, 
+  // but for now simple sync is safer, expecting parent updates to be consistent).
+  // However, strict sync might overwrite user input if parent lags. 
+  // We'll rely on localUser for inputs.
   useEffect(() => {
-    if ((user.onboardingStep || 1) > TOTAL_STEPS && !user.onboardingComplete) {
-      saveUser({ ...user, onboardingStep: TOTAL_STEPS });
+    // Only update fields that might have changed externally if needed
+    // For now, we trust local state for the form inputs.
+    // But we should sync if the step changes or on initial mount.
+  }, []);
+
+  // Debounce saveUser
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      // Only save if there are differences to avoid loops
+      // We strip metadata to avoid loops caused by server-updated timestamps
+      const { userId: _u1, googleId: _g1, createdAt: _c1, updatedAt: _up1, ...localRest } = localUser as any;
+      const { userId: _u2, googleId: _g2, createdAt: _c2, updatedAt: _up2, ...propRest } = user as any;
+
+      if (JSON.stringify(localRest) !== JSON.stringify(propRest)) {
+        saveUser(localUser);
+      }
+    }, 800); // 800ms debounce
+
+    return () => clearTimeout(handler);
+  }, [localUser, saveUser, user]);
+
+  const handleChange = (field: keyof UserProfile, value: any) => {
+    setLocalUser(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleProfessionChange = (p: Profession) => {
+    const current = [...(localUser.professions || [])];
+    if (current.includes(p)) {
+      handleChange('professions', current.filter(x => x !== p));
+    } else if (current.length < 3) {
+      handleChange('professions', [...current, p]);
     }
-  }, [user, saveUser]);
+  };
 
   const validateStep = () => {
+    const u = localUser;
     if (currentStep === 1) {
-      return !!(user.firstName && user.lastName && user.dob && user.phone && user.permanentAddress);
+      return !!(u.firstName && u.lastName && u.dob && u.phone && u.permanentAddress);
     }
     if (currentStep === 2) {
-      return !!(user.gender && user.motherTongue && user.professions.length > 0);
+      return !!(u.gender && u.motherTongue && u.professions && u.professions.length > 0);
     }
     if (currentStep === 3) {
-      return !!(user.nationality && user.domicileState && user.district && user.pincode);
+      return !!(u.nationality && u.domicileState && u.district && u.pincode);
     }
     return false;
   };
@@ -45,16 +82,31 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
   const isStepValid = validateStep();
 
   const handleNext = () => {
-    if (currentStep < TOTAL_STEPS) {
-      saveUser({ ...user, onboardingStep: currentStep + 1 });
-    } else {
-      saveUser({ ...user, onboardingComplete: true });
-    }
+    const nextStep = currentStep < TOTAL_STEPS ? currentStep + 1 : currentStep;
+    const isComplete = currentStep === TOTAL_STEPS;
+    
+    const updatedUser = {
+      ...localUser,
+      onboardingStep: nextStep,
+      onboardingComplete: isComplete ? true : localUser.onboardingComplete
+    };
+
+    setLocalUser(updatedUser);
+    // Force save immediately on navigation
+    saveUser(updatedUser);
   };
 
   const handleBack = () => {
     if (currentStep > 1) {
-      saveUser({ ...user, onboardingStep: currentStep - 1 });
+      const prevStep = currentStep - 1;
+      const updatedUser = {
+        ...localUser,
+        onboardingStep: prevStep
+      };
+      
+      setLocalUser(updatedUser);
+      // Force save on back too
+      saveUser(updatedUser);
     }
   };
 
@@ -77,16 +129,16 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                     <Label>First Name *</Label>
                     <Input
                       placeholder="First Name"
-                      value={user.firstName || ''}
-                      onChange={(e) => saveUser({ ...user, firstName: e.target.value })}
+                      value={localUser.firstName || ''}
+                      onChange={(e) => handleChange('firstName', e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Last Name *</Label>
                     <Input
                       placeholder="Last Name"
-                      value={user.lastName || ''}
-                      onChange={(e) => saveUser({ ...user, lastName: e.target.value })}
+                      value={localUser.lastName || ''}
+                      onChange={(e) => handleChange('lastName', e.target.value)}
                     />
                   </div>
                 </div>
@@ -95,16 +147,16 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                     <Label>Date of Birth *</Label>
                     <Input
                       type="date"
-                      value={user.dob || ''}
-                      onChange={(e) => saveUser({ ...user, dob: e.target.value })}
+                      value={localUser.dob || ''}
+                      onChange={(e) => handleChange('dob', e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Phone Number *</Label>
                     <Input
                       placeholder="+91"
-                      value={user.phone || ''}
-                      onChange={(e) => saveUser({ ...user, phone: e.target.value })}
+                      value={localUser.phone || ''}
+                      onChange={(e) => handleChange('phone', e.target.value)}
                     />
                   </div>
                 </div>
@@ -117,16 +169,16 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                     <Label>Father's Name</Label>
                     <Input
                       placeholder="Father's Name"
-                      value={user.fatherName || ''}
-                      onChange={(e) => saveUser({ ...user, fatherName: e.target.value })}
+                      value={localUser.fatherName || ''}
+                      onChange={(e) => handleChange('fatherName', e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Mother's Name</Label>
                     <Input
                       placeholder="Mother's Name"
-                      value={user.motherName || ''}
-                      onChange={(e) => saveUser({ ...user, motherName: e.target.value })}
+                      value={localUser.motherName || ''}
+                      onChange={(e) => handleChange('motherName', e.target.value)}
                     />
                   </div>
                 </div>
@@ -136,8 +188,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                 <Label>Permanent Address *</Label>
                 <Textarea
                   placeholder="Street, City, Building..."
-                  value={user.permanentAddress || ''}
-                  onChange={(e) => saveUser({ ...user, permanentAddress: e.target.value })}
+                  value={localUser.permanentAddress || ''}
+                  onChange={(e) => handleChange('permanentAddress', e.target.value)}
                 />
               </div>
             </div>
@@ -150,7 +202,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Gender *</Label>
-                    <Select value={user.gender} onValueChange={(v) => saveUser({ ...user, gender: v })}>
+                    <Select value={localUser.gender} onValueChange={(v) => handleChange('gender', v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select Gender" />
                       </SelectTrigger>
@@ -163,7 +215,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                   </div>
                   <div className="space-y-2">
                     <Label>Mother Tongue *</Label>
-                    <Select value={user.motherTongue} onValueChange={(v) => saveUser({ ...user, motherTongue: v })}>
+                    <Select value={localUser.motherTongue} onValueChange={(v) => handleChange('motherTongue', v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select Language" />
                       </SelectTrigger>
@@ -179,7 +231,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
 
               <div className="space-y-4">
                 <Label>Education Qualification</Label>
-                <Select value={user.highestQualification} onValueChange={(v) => saveUser({ ...user, highestQualification: v })}>
+                <Select value={localUser.highestQualification} onValueChange={(v) => handleChange('highestQualification', v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select Qualification" />
                   </SelectTrigger>
@@ -197,19 +249,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                   {(['Student', 'Professional', 'Founder', 'Researcher', 'Other'] as Profession[]).map(p => (
                     <Button
                       key={p}
-                      variant={user.professions.includes(p) ? 'default' : 'outline'}
+                      variant={localUser.professions?.includes(p) ? 'default' : 'outline'}
                       className="justify-between px-4 h-14 rounded-xl"
-                      onClick={() => {
-                        const current = [...user.professions];
-                        if (current.includes(p)) {
-                          saveUser({ ...user, professions: current.filter(x => x !== p) });
-                        } else if (current.length < 3) {
-                          saveUser({ ...user, professions: [...current, p] });
-                        }
-                      }}
+                      onClick={() => handleProfessionChange(p)}
                     >
                       {p}
-                      {user.professions.includes(p) && <Check className="w-4 h-4" />}
+                      {localUser.professions?.includes(p) && <Check className="w-4 h-4" />}
                     </Button>
                   ))}
                 </div>
@@ -224,7 +269,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Social Category</Label>
-                    <Select value={user.socialCategory} onValueChange={(v) => saveUser({ ...user, socialCategory: v })}>
+                    <Select value={localUser.socialCategory} onValueChange={(v) => handleChange('socialCategory', v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select Category" />
                       </SelectTrigger>
@@ -235,7 +280,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                   </div>
                   <div className="space-y-2">
                     <Label>Religion</Label>
-                    <Select value={user.religion} onValueChange={(v) => saveUser({ ...user, religion: v })}>
+                    <Select value={localUser.religion} onValueChange={(v) => handleChange('religion', v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select Religion" />
                       </SelectTrigger>
@@ -246,7 +291,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                   </div>
                   <div className="space-y-2">
                     <Label>Marital Status</Label>
-                    <Select value={user.maritalStatus} onValueChange={(v) => saveUser({ ...user, maritalStatus: v })}>
+                    <Select value={localUser.maritalStatus} onValueChange={(v) => handleChange('maritalStatus', v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select Marital Status" />
                       </SelectTrigger>
@@ -257,7 +302,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                   </div>
                   <div className="space-y-2">
                     <Label>Disability Status</Label>
-                    <Select value={user.disabilityStatus} onValueChange={(v) => saveUser({ ...user, disabilityStatus: v })}>
+                    <Select value={localUser.disabilityStatus} onValueChange={(v) => handleChange('disabilityStatus', v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
@@ -272,11 +317,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Nationality *</Label>
-                  <Input placeholder="Indian" value={user.nationality || ''} onChange={(e) => saveUser({ ...user, nationality: e.target.value })} />
+                  <Input placeholder="Indian" value={localUser.nationality || ''} onChange={(e) => handleChange('nationality', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Domicile State *</Label>
-                  <Select value={user.domicileState} onValueChange={(v) => saveUser({ ...user, domicileState: v })}>
+                  <Select value={localUser.domicileState} onValueChange={(v) => handleChange('domicileState', v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select State" />
                     </SelectTrigger>
@@ -290,15 +335,15 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>District *</Label>
-                  <Input placeholder="District" value={user.district || ''} onChange={(e) => saveUser({ ...user, district: e.target.value })} />
+                  <Input placeholder="District" value={localUser.district || ''} onChange={(e) => handleChange('district', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Mandal</Label>
-                  <Input placeholder="Mandal" value={user.mandal || ''} onChange={(e) => saveUser({ ...user, mandal: e.target.value })} />
+                  <Input placeholder="Mandal" value={localUser.mandal || ''} onChange={(e) => handleChange('mandal', e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Pincode *</Label>
-                  <Input placeholder="6-digit PIN" maxLength={6} value={user.pincode || ''} onChange={(e) => saveUser({ ...user, pincode: e.target.value })} />
+                  <Input placeholder="6-digit PIN" maxLength={6} value={localUser.pincode || ''} onChange={(e) => handleChange('pincode', e.target.value)} />
                 </div>
               </div>
             </div>
