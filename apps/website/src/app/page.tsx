@@ -200,11 +200,16 @@ function AppContent() {
     localStorage.removeItem('sabapplier_extension_user');
     localStorage.removeItem('sabapplier_extension_sync_timestamp');
 
-    // Set logout flag for extension
+    // Set logout flag for extension (so background sync clears extension auth)
     localStorage.setItem('sabapplier_extension_logout', 'true');
     localStorage.setItem('sabapplier_extension_logout_timestamp', Date.now().toString());
 
-    // Remove logout flag after delay
+    // Notify extension immediately so it logs out without waiting for 30s poll
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sabapplier-website-logout'));
+    }
+
+    // Remove logout flag after delay (fallback cleanup; extension also clears them when it processes)
     setTimeout(() => {
       localStorage.removeItem('sabapplier_extension_logout');
       localStorage.removeItem('sabapplier_extension_logout_timestamp');
