@@ -40,7 +40,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
   useEffect(() => {
     const handler = setTimeout(() => {
       // Only save if there are differences to avoid loops
-      if (JSON.stringify(localUser) !== JSON.stringify(user)) {
+      // We strip metadata to avoid loops caused by server-updated timestamps
+      const { userId: _u1, googleId: _g1, createdAt: _c1, updatedAt: _up1, ...localRest } = localUser as any;
+      const { userId: _u2, googleId: _g2, createdAt: _c2, updatedAt: _up2, ...propRest } = user as any;
+
+      if (JSON.stringify(localRest) !== JSON.stringify(propRest)) {
         saveUser(localUser);
       }
     }, 800); // 800ms debounce
@@ -78,17 +82,31 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
   const isStepValid = validateStep();
 
   const handleNext = () => {
+    const nextStep = currentStep < TOTAL_STEPS ? currentStep + 1 : currentStep;
+    const isComplete = currentStep === TOTAL_STEPS;
+    
+    const updatedUser = {
+      ...localUser,
+      onboardingStep: nextStep,
+      onboardingComplete: isComplete ? true : localUser.onboardingComplete
+    };
+
+    setLocalUser(updatedUser);
     // Force save immediately on navigation
-    saveUser({ ...localUser, onboardingStep: currentStep < TOTAL_STEPS ? currentStep + 1 : currentStep });
-    if (currentStep === TOTAL_STEPS) {
-       saveUser({ ...localUser, onboardingComplete: true });
-    }
+    saveUser(updatedUser);
   };
 
   const handleBack = () => {
     if (currentStep > 1) {
+      const prevStep = currentStep - 1;
+      const updatedUser = {
+        ...localUser,
+        onboardingStep: prevStep
+      };
+      
+      setLocalUser(updatedUser);
       // Force save on back too
-      saveUser({ ...localUser, onboardingStep: currentStep - 1 });
+      saveUser(updatedUser);
     }
   };
 
@@ -325,7 +343,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                 </div>
                 <div className="space-y-2">
                   <Label>Pincode *</Label>
-                  <Input placeholder="6-digit PIN" maxLength={6} value={user.pincode || ''} onChange={(e) => saveUser({ ...user, pincode: e.target.value })} />
+                  <Input placeholder="6-digit PIN" maxLength={6} value={localUser.pincode || ''} onChange={(e) => handleChange('pincode', e.target.value)} />
                 </div>
               </div>
             </div>
