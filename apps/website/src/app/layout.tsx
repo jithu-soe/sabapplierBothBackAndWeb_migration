@@ -1,16 +1,26 @@
-import type {Metadata} from 'next';
+import type { Metadata } from 'next';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'Sabapplier AI - Identity Vault',
-  description: 'Your Single Source of Truth for personal identity and documents.',
+  // This changes the main Blue Title
+  title: {
+    template: '%s | Sabapplier AI',
+    default: 'Sabapplier AI - Your Trusted Form Filler Agent', 
+  },
+  // This changes the description text below the title
+  description: 'Streamline your applications with Sabapplier. Use the website to manage documents and the extension to auto-fill forms for grants, jobs, internships, and college exams.',
+  
+  // This fixes the Logo
   icons: {
-    icon: '/logo.jpeg',
+    icon: '/logo.jpeg', 
     shortcut: '/logo.jpeg',
     apple: '/logo.jpeg',
   },
+  
+  // improved SEO keywords for your target audience
+  keywords: ['form filler', 'AI agent', 'grant applications', 'job automation', 'college admission', 'auto-fill extension'],
 };
 
 export default function RootLayout({
