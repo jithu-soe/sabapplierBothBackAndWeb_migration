@@ -21,6 +21,10 @@ export const metadata: Metadata = {
   
   // improved SEO keywords for your target audience
   keywords: ['form filler', 'AI agent', 'grant applications', 'job automation', 'college admission', 'auto-fill extension'],
+  // canonical domain to avoid www/non-www confusion
+  alternates: {
+    canonical: 'https://sabapplier.com/',
+  },
 };
 
 export default function RootLayout({
