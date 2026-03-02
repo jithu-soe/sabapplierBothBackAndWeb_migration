@@ -20,7 +20,8 @@ import {
   FilePlus,
   Folder,
   Sparkles,
-  Edit2
+  Edit2,
+  Download
 } from 'lucide-react';
 import { processVaultDocument } from '@/lib/api';
 import { uploadUserDocument } from '@/firebase/storage';
@@ -53,10 +54,10 @@ const getVaultTabs = (professions: string[] = []) => {
       label: 'Personal Identity', 
       folder: 'Personal Identity', 
       defaultDocs: [
-        'Aadhaar Card', 
-        'PAN Card', 
         'Passport Photo', 
         'Signature', 
+        'Aadhaar Card', 
+        'PAN Card', 
         'Voter ID',
         'Driving Licence',
         '10th Marksheet',
@@ -71,12 +72,12 @@ const getVaultTabs = (professions: string[] = []) => {
       folder: 'Student / Opportunity Seeker', 
       aliases: ['Student', 'Student Documents'], 
       defaultDocs: [
+        'Passport Photo',
+        'Signature',
         'Resume', 
         '10th Certificate', 
         'Caste Certificate', 
-        'Left Thumb',
-        'Passport Photo',
-        'Signature'
+        'Left Thumb'
       ] 
     },
   ];
@@ -388,6 +389,33 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
     }
   };
 
+  const handleDeleteFile = (docName: string) => {
+    if (window.confirm(`Are you sure you want to delete the file for "${docName}"?`)) {
+      const updatedDocs = { ...user.documents };
+      if (updatedDocs[docName]) {
+        if (isCustomDocument(docName)) {
+           // For custom doc, keep the entry but clear file data
+           updatedDocs[docName] = {
+             ...updatedDocs[docName],
+             fileUrl: '',
+             extractedData: null,
+             status: 'idle',
+           };
+        } else {
+           // For default doc, deleting the key resets it
+           delete updatedDocs[docName];
+        }
+        
+        saveUser({ ...user, documents: updatedDocs });
+        
+        // Clear processing state if it was processing
+        if (processingDoc === docName) {
+            setProcessingDoc(null);
+        }
+      }
+    }
+  };
+
   const isCustomFolder = (folderName: string) => customFolders.includes(folderName);
   
   const isCustomDocument = (docName: string) => {
@@ -396,6 +424,40 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
   };
 
   const currentDocData = viewingDoc ? user.documents?.[viewingDoc] : null;
+
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      // Use the proxy API endpoint to download the file
+      // This avoids CORS issues and sets the correct headers for download
+      
+      // Try to determine extension if missing from filename
+      let extension = '';
+      if (!filename.includes('.')) {
+          const urlPath = new URL(url).pathname;
+          const dotIndex = urlPath.lastIndexOf('.');
+          if (dotIndex !== -1) {
+              extension = urlPath.substring(dotIndex);
+          }
+      }
+      
+      const finalFilename = filename.endsWith(extension) ? filename : `${filename}${extension}`;
+      
+      const proxyUrl = `/api/proxy-file?url=${encodeURIComponent(url)}&name=${encodeURIComponent(finalFilename)}`;
+      
+      // Trigger download by navigating to the proxy URL
+      const link = document.createElement('a');
+      link.href = proxyUrl;
+      link.download = finalFilename; // Fallback
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback to opening in new tab
+      window.open(url, '_blank');
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -635,13 +697,36 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
                                         <div className="flex flex-col gap-2">
                                             <div className="flex gap-1">
                                                 {isUploaded && (
+                                                    <>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-slate-400 hover:text-[#2F56C0] hover:bg-blue-50 rounded-lg"
+                                                            onClick={() => setViewingDoc(docType)}
+                                                            title="View Document"
+                                                        >
+                                                            <Eye className="w-4 h-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-slate-400 hover:text-[#2F56C0] hover:bg-blue-50 rounded-lg"
+                                                            onClick={() => handleDownload(docData.fileUrl, docType)}
+                                                            title="Download Document"
+                                                        >
+                                                            <Download className="w-4 h-4" />
+                                                        </Button>
+                                                    </>
+                                                )}
+                                                {(isUploaded || isProcessing) && (
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-slate-400 hover:text-[#2F56C0] hover:bg-blue-50 rounded-lg"
-                                                        onClick={() => setViewingDoc(docType)}
+                                                        className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                                                        onClick={() => handleDeleteFile(docType)}
+                                                        title="Delete File"
                                                     >
-                                                        <Eye className="w-4 h-4" />
+                                                        <Trash2 className="w-4 h-4" />
                                                     </Button>
                                                 )}
                                                 {isCustomDocument(docType) && (
@@ -654,6 +739,7 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
                                                             setRenamingDocName(docType);
                                                             setIsRenameDocOpen(true);
                                                         }}
+                                                        title="Rename Document"
                                                     >
                                                         <Edit2 className="w-4 h-4" />
                                                     </Button>
@@ -664,6 +750,7 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
                                                         size="icon"
                                                         className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
                                                         onClick={() => handleDeleteDocument(docType)}
+                                                        title="Delete Document Field"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </Button>
