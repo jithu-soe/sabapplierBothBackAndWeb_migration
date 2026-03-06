@@ -79,8 +79,8 @@ export async function saveOnboardingStep(
 
 export async function processVaultDocument(
   token: string,
-  payload: { dataUri: string; docType: string; fileUrl: string; storagePath?: string }
-): Promise<{ user: UserProfile }> {
+  payload: { docType: string; fileUrl: string; storagePath?: string; mimeType?: string; dataUri?: string }
+): Promise<{ user: UserProfile; document?: any }> {
   return apiRequest('/vault/process', {
     method: 'POST',
     headers: {

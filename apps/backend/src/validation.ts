@@ -59,10 +59,11 @@ export const onboardSchema = z.object({
 });
 
 export const processVaultSchema = z.object({
-  dataUri: z.string().startsWith('data:'),
+  dataUri: z.string().startsWith('data:').optional(),
   docType: z.string().min(1),
   fileUrl: z.string().url(),
   storagePath: z.string().optional(),
+  mimeType: z.string().optional(),
 });
 
 export const uploadVaultSchema = z.object({

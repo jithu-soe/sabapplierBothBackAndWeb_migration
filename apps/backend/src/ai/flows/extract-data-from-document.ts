@@ -11,11 +11,8 @@ import { ai } from '../genkit';
 import {z} from 'genkit';
 
 const ExtractDataFromDocumentInputSchema = z.object({
-  dataUri: z
-    .string()
-    .describe(
-      "The document as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
+  fileUri: z.string().describe("The URI returned by the Gemini File API."),
+  mimeType: z.string().describe("The MIME type of the uploaded file."),
   docType: z.string().describe('The type of the document (e.g., aadhaar_card).'),
 });
 export type ExtractDataFromDocumentInput = z.infer<typeof ExtractDataFromDocumentInputSchema>;
@@ -47,7 +44,7 @@ const prompt = ai.definePrompt({
 Document Type: {{{docType}}}
 
 Here is the document:
-{{media url=dataUri}}
+{{media url=fileUri contentType=mimeType}}
 
 Extract all identifiable fields from the document. For each field, identify its label and its value. 
 

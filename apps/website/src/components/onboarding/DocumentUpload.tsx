@@ -36,15 +36,6 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
     const [error, setError] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const toBase64 = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = error => reject(error);
-        });
-    };
-
     const handleDrag = (e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -79,8 +70,8 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
             return;
         }
 
-        if (file.size > 5 * 1024 * 1024) { // 5MB limit
-            setError("File size must be less than 5MB.");
+        if (file.size > 50 * 1024 * 1024) { // 50MB limit
+            setError("File size must be less than 50MB.");
             return;
         }
 
@@ -89,7 +80,6 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
         setProgress(0);
 
         try {
-            const dataUri = await toBase64(file);
             const { fileUrl, storagePath } = await uploadUserDocument(userId, file, docType, setProgress);
             setProgress(100);
             onUploadComplete(fileUrl);
@@ -97,7 +87,11 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
 
             setProcessing(true);
             const processed = await processVaultDocument(authToken, {
-                dataUri,
+                docType,
+                fileUrl,
+                storagePath,
+                mimeType: file.type
+            });
                 docType,
                 fileUrl,
                 storagePath

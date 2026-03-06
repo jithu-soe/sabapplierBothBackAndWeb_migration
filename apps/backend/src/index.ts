@@ -8,11 +8,13 @@ import { deleteUser, getUser, getUserByGoogleId, patchUser, upsertUser } from '.
 import { deleteUserStorageData, uploadToFirebaseStorage } from './storage';
 import { AuthJwtPayload, UserDocument, UserProfile } from './types';
 import { authGoogleSchema, onboardSchema, processVaultSchema, profilePatchSchema, uploadVaultSchema } from './validation';
+import { uploadFileToGemini } from './ai/file-manager';
 
-async function runDocumentExtraction(dataUri: string, docType: string): Promise<Record<string, unknown>> {
+async function runDocumentExtraction(fileUrl: string, docType: string, mimeType: string = 'application/pdf'): Promise<Record<string, unknown>> {
   try {
+    const fileUri = await uploadFileToGemini(fileUrl, mimeType);
     const ai = await import('./ai/flows/extract-data-from-document.js');
-    const result = await ai.extractDataFromDocument({ dataUri, docType });
+    const result = await ai.extractDataFromDocument({ fileUri, docType, mimeType });
     return result.extractedData || {};
   } catch (error) {
     console.warn('AI extraction unavailable, storing fallback payload', error);
@@ -341,7 +343,7 @@ const server = createServer(async (req, res) => {
         sendJson(req, res, 400, { error: parsed.error.flatten() });
         return;
       }
-      const { dataUri, docType, fileUrl, storagePath } = parsed.data;
+      const { docType, fileUrl, storagePath, mimeType } = parsed.data;
 
       const current = await getUser(auth.userId);
       if (!current) {
@@ -350,7 +352,7 @@ const server = createServer(async (req, res) => {
       }
 
       try {
-        const extractedData = await runDocumentExtraction(dataUri, docType);
+        const extractedData = await runDocumentExtraction(fileUrl, docType, mimeType || 'application/pdf');
         const now = new Date().toISOString();
         const doc: UserDocument = {
           fileUrl,
