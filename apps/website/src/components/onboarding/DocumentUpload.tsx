@@ -92,10 +92,6 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
                 storagePath,
                 mimeType: file.type
             });
-                docType,
-                fileUrl,
-                storagePath
-            });
 
             if (onExtractionComplete) {
                 onExtractionComplete(processed.user.documents?.[docType]?.extractedData);

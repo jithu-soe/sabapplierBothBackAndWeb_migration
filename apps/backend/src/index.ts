@@ -10,14 +10,14 @@ import { AuthJwtPayload, UserDocument, UserProfile } from './types';
 import { authGoogleSchema, onboardSchema, processVaultSchema, profilePatchSchema, uploadVaultSchema } from './validation';
 import { uploadFileToGemini } from './ai/file-manager';
 
-async function runDocumentExtraction(fileUrl: string, docType: string, mimeType: string = 'application/pdf'): Promise<Record<string, unknown>> {
+async function runDocumentExtraction(fileUrl: string, docType: string, mimeType: string = 'application/pdf', requestId?: string): Promise<Record<string, unknown>> {
   try {
     const fileUri = await uploadFileToGemini(fileUrl, mimeType);
     const ai = await import('./ai/flows/extract-data-from-document.js');
     const result = await ai.extractDataFromDocument({ fileUri, docType, mimeType });
     return result.extractedData || {};
   } catch (error) {
-    console.warn('AI extraction unavailable, storing fallback payload', error);
+    logWarn('AI extraction unavailable, storing fallback payload', { requestId, error });
     return {
       warning: 'ai_unavailable',
       docType,
@@ -66,35 +66,39 @@ function sendJson(req: IncomingMessage, res: ServerResponse, status: number, bod
 }
 
 function logInfo(message: string, meta?: Record<string, unknown>): void {
+  const timestamp = new Date().toISOString();
   if (meta) {
-    console.log(`[INFO] ${message}`, meta);
+    console.log(`[INFO] [${timestamp}] ${message}`, JSON.stringify(meta, null, 2));
     return;
   }
-  console.log(`[INFO] ${message}`);
+  console.log(`[INFO] [${timestamp}] ${message}`);
 }
 
 function logWarn(message: string, meta?: Record<string, unknown>): void {
+  const timestamp = new Date().toISOString();
   if (meta) {
-    console.warn(`[WARN] ${message}`, meta);
+    console.warn(`[WARN] [${timestamp}] ${message}`, JSON.stringify(meta, null, 2));
     return;
   }
-  console.warn(`[WARN] ${message}`);
+  console.warn(`[WARN] [${timestamp}] ${message}`);
 }
 
 function logError(message: string, error?: unknown, meta?: Record<string, unknown>): void {
+  const timestamp = new Date().toISOString();
   if (meta) {
-    console.error(`[ERROR] ${message}`, meta, error);
+    console.error(`[ERROR] [${timestamp}] ${message}`, JSON.stringify(meta, null, 2), error);
     return;
   }
-  console.error(`[ERROR] ${message}`, error);
+  console.error(`[ERROR] [${timestamp}] ${message}`, error);
 }
 
-async function readJsonBody(req: IncomingMessage): Promise<any> {
+async function readJsonBody(req: IncomingMessage, requestId?: string): Promise<any> {
   const chunks: Buffer[] = [];
   for await (const chunk of req) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
   const text = Buffer.concat(chunks).toString('utf8');
+  logInfo('Body read', { requestId, sizeBytes: text.length, snippet: text.slice(0, 100) + (text.length > 100 ? '...' : '') });
   return text ? JSON.parse(text) : {};
 }
 
@@ -145,7 +149,13 @@ const server = createServer(async (req, res) => {
     const pathname = url.pathname;
     const ip = getClientIp(req);
 
-    logInfo('Request start', { requestId, method, pathname, ip });
+    logInfo('Request start', {
+      requestId,
+      method,
+      pathname,
+      ip,
+      headers: req.headers
+    });
     res.on('finish', () => {
       logInfo('Request end', {
         requestId,
@@ -162,6 +172,7 @@ const server = createServer(async (req, res) => {
     }
 
     if (method === 'OPTIONS') {
+      logInfo('Handling OPTIONS request', { requestId, pathname });
       setCorsHeaders(req, res);
       res.statusCode = 204;
       res.end();
@@ -174,7 +185,7 @@ const server = createServer(async (req, res) => {
     }
 
     if (method === 'POST' && (pathname === '/auth/google' || pathname === '/auth/google/code')) {
-      const body = await readJsonBody(req);
+      const body = await readJsonBody(req, requestId);
       const parsed = authGoogleSchema.safeParse(body);
       if (!parsed.success) {
         logWarn('Validation failed for /auth/google', {
@@ -241,7 +252,7 @@ const server = createServer(async (req, res) => {
       }
 
       if (method === 'POST') {
-        const body = await readJsonBody(req);
+        const body = await readJsonBody(req, requestId);
         const parsed = profilePatchSchema.safeParse(body || {});
         if (!parsed.success) {
           logWarn('Validation failed for /profile', {
@@ -294,7 +305,7 @@ const server = createServer(async (req, res) => {
         return;
       }
 
-      const body = await readJsonBody(req);
+      const body = await readJsonBody(req, requestId);
       const parsed = onboardSchema.safeParse(body || {});
       if (!parsed.success) {
         logWarn('Validation failed for /profile/onboard', {
@@ -332,7 +343,7 @@ const server = createServer(async (req, res) => {
         return;
       }
 
-      const body = await readJsonBody(req);
+      const body = await readJsonBody(req, requestId);
       const parsed = processVaultSchema.safeParse(body || {});
       if (!parsed.success) {
         logWarn('Validation failed for /vault/process', {
@@ -352,7 +363,7 @@ const server = createServer(async (req, res) => {
       }
 
       try {
-        const extractedData = await runDocumentExtraction(fileUrl, docType, mimeType || 'application/pdf');
+        const extractedData = await runDocumentExtraction(fileUrl, docType, mimeType || 'application/pdf', requestId);
         const now = new Date().toISOString();
         const doc: UserDocument = {
           fileUrl,
@@ -405,7 +416,7 @@ const server = createServer(async (req, res) => {
         return;
       }
 
-      const body = await readJsonBody(req);
+      const body = await readJsonBody(req, requestId);
       const parsed = uploadVaultSchema.safeParse(body || {});
       if (!parsed.success) {
         logWarn('Validation failed for /vault/upload', {

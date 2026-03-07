@@ -261,53 +261,48 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
     const currentDoc = user.documents?.[docType];
     const folder = currentDoc?.folder || currentTabConfig.folder;
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUri = reader.result as string;
-      try {
-        const normalizedDocType = docType.toLowerCase().replace(/\s+/g, '_');
-        const { fileUrl, storagePath } = await uploadUserDocument(userId, file, normalizedDocType);
-        
-        const tempDocs = {
-            ...user.documents,
-            [docType]: {
-                fileUrl,
-                storagePath,
-                status: 'processing' as const,
-                uploadedAt: new Date().toISOString(),
-                folder
-            }
-        };
-        saveUser({ ...user, documents: tempDocs });
-
-        const processed = await processVaultDocument(authToken, {
-          dataUri,
-          docType: normalizedDocType,
-          fileUrl,
-          storagePath,
-        });
-
-        const updatedDocs = {
+    try {
+      const normalizedDocType = docType.toLowerCase().replace(/\s+/g, '_');
+      const { fileUrl, storagePath } = await uploadUserDocument(userId, file, normalizedDocType);
+      
+      const tempDocs = {
           ...user.documents,
           [docType]: {
-            fileUrl,
-            storagePath,
-            extractedData: processed.user.documents?.[normalizedDocType]?.extractedData || null,
-            status: processed.user.documents?.[normalizedDocType]?.status || 'verified',
-            uploadedAt: processed.user.documents?.[normalizedDocType]?.uploadedAt || new Date().toISOString(),
-            processedAt: processed.user.documents?.[normalizedDocType]?.processedAt,
-            folder: folder 
+              fileUrl,
+              storagePath,
+              status: 'processing' as const,
+              uploadedAt: new Date().toISOString(),
+              folder
           }
-        };
+      };
+      saveUser({ ...user, documents: tempDocs });
 
-        saveUser({ ...user, documents: updatedDocs });
-      } catch (err) {
-        console.error('AI Processing failed:', err);
-      } finally {
-        setProcessingDoc(null);
-      }
-    };
-    reader.readAsDataURL(file);
+      const processed = await processVaultDocument(authToken, {
+        docType: normalizedDocType,
+        fileUrl,
+        storagePath,
+        mimeType: file.type,
+      });
+
+      const updatedDocs = {
+        ...user.documents,
+        [docType]: {
+          fileUrl,
+          storagePath,
+          extractedData: processed.user.documents?.[normalizedDocType]?.extractedData || null,
+          status: processed.user.documents?.[normalizedDocType]?.status || 'verified',
+          uploadedAt: processed.user.documents?.[normalizedDocType]?.uploadedAt || new Date().toISOString(),
+          processedAt: processed.user.documents?.[normalizedDocType]?.processedAt,
+          folder: folder 
+        }
+      };
+
+      saveUser({ ...user, documents: updatedDocs });
+    } catch (err) {
+      console.error('AI Processing failed:', err);
+    } finally {
+      setProcessingDoc(null);
+    }
   };
 
   const handleRemove = (docType: string) => {
