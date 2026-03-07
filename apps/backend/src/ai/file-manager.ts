@@ -40,18 +40,18 @@ export async function uploadFileToGemini(fileUrl: string, mimeType: string): Pro
     console.log(`File uploaded: ${uploadedFile.name}`);
 
     // 3. Wait for processing (Crucial for PDFs)
-    let fileState = await geminiClient.files.get({ name: uploadedFile.name });
+    let fileState = await geminiClient.files.get({ name: uploadedFile.name as string });
     while (fileState.state === 'PROCESSING') {
       console.log('Gemini is processing the file...');
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      fileState = await geminiClient.files.get({ name: uploadedFile.name });
+      fileState = await geminiClient.files.get({ name: uploadedFile.name as string });
     }
 
     if (fileState.state === 'FAILED') {
       throw new Error('Google Gemini failed to process this document.');
     }
 
-    return fileState.uri;
+    return fileState.uri as string;
 
   } catch (error) {
     console.error("Error in uploadFileToGemini:", error);
