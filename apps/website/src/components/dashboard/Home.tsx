@@ -144,7 +144,7 @@ export const Home: React.FC<HomeProps> = ({ applications = defaultApplications, 
             </span>
           </h1>
           <p className="text-lg text-gray-600 mb-4 font-medium">
-            Your Trusted Exam Form Agent
+            Your Trusted form filler Agent
           </p>
           <p className="text-base text-gray-500 mb-8 max-w-xl mx-auto">
             Streamline your applications with Sabapplier. Use website to manage documents, extension to fill form
