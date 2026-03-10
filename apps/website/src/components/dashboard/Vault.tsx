@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { UserProfile, Profession } from '@/lib/types';
+import { UserProfile } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -21,7 +21,8 @@ import {
   Folder,
   Sparkles,
   Edit2,
-  Download
+  Download,
+  ArrowRight
 } from 'lucide-react';
 import { processVaultDocument } from '@/lib/api';
 import { uploadUserDocument } from '@/firebase/storage';
@@ -47,7 +48,20 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const getVaultTabs = (professions: string[] = []) => {
+const getVaultTabs = (user: UserProfile) => {
+  const professions = user.professions || [];
+  const founderTab = {
+    id: 'founder',
+    label: 'Founder',
+    folder: 'Founder',
+    aliases: ['Founder Documents'],
+    defaultDocs: ['Pitch Deck', 'Incorporation Certificate', 'Company Registration / Proof of Formation']
+  };
+
+  if (user.marketSegment === 'global_founder') {
+    return [founderTab];
+  }
+
   const base = [
     { 
       id: 'personal', 
@@ -95,13 +109,7 @@ const getVaultTabs = (professions: string[] = []) => {
   }
 
   if (professions.includes('Founder')) {
-    profession_tabs.push({
-      id: 'founder',
-      label: 'Founder',
-      folder: 'Founder',
-      aliases: ['Founder Documents'],
-      defaultDocs: ['Pitch Deck', 'DPIIT Certificate', 'Incorporation Certificate']
-    });
+    profession_tabs.push(founderTab);
   }
 
   if (professions.includes('Researcher')) {
@@ -117,15 +125,37 @@ const getVaultTabs = (professions: string[] = []) => {
   return [...base, ...profession_tabs];
 };
 
+const hasIncompleteFounderDetails = (user: UserProfile) => {
+  if (!(user.marketSegment === 'global_founder' || user.professions.includes('Founder'))) {
+    return false;
+  }
+
+  return [
+    user.phone,
+    user.linkedInProfile,
+    user.education,
+    user.workExperience,
+    user.startupRole,
+    user.startupName,
+    user.startupWebsite,
+    user.startupLinkedInProfile,
+    user.industry,
+    user.startupStage,
+    user.incorporationDate,
+    user.companyType,
+  ].some((value) => !value?.trim());
+};
+
 interface VaultProps {
   userId: string;
   authToken: string;
   user: UserProfile;
   saveUser: (user: UserProfile) => void;
+  onEditFounderDetails: () => void;
 }
 
-export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser }) => {
-  const [activeTab, setActiveTab] = useState<string>('personal');
+export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser, onEditFounderDetails }) => {
+  const [activeTab, setActiveTab] = useState<string>(user.marketSegment === 'global_founder' ? 'founder' : 'personal');
   const [searchQuery, setSearchQuery] = useState('');
   const [processingDoc, setProcessingDoc] = useState<string | null>(null);
   const [viewingDoc, setViewingDoc] = useState<string | null>(null);
@@ -146,8 +176,7 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
   const [renamingDocName, setRenamingDocName] = useState('');
   const [renamingDocId, setRenamingDocId] = useState<string | null>(null);
 
-  // Get VAULT_TABS based on user professions
-  const VAULT_TABS = getVaultTabs(user.professions || []);
+  const VAULT_TABS = getVaultTabs(user);
 
   // Calculate all tabs (standard + custom)
   const standardFolderNames = VAULT_TABS.map(t => t.folder);
@@ -173,6 +202,12 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
 
   const allTabs = [...VAULT_TABS, ...dynamicTabs];
   const currentTabConfig = allTabs.find(t => t.id === activeTab) || allTabs[0];
+
+  React.useEffect(() => {
+    if (!allTabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab(allTabs[0]?.id || 'founder');
+    }
+  }, [activeTab, allTabs]);
 
   const getDocumentsForTab = (tabId: string) => {
     const config = allTabs.find(t => t.id === tabId);
@@ -419,6 +454,7 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
   };
 
   const currentDocData = viewingDoc ? user.documents?.[viewingDoc] : null;
+  const shouldShowFounderReminder = activeTab === 'founder' && hasIncompleteFounderDetails(user);
 
   const handleDownload = async (url: string, filename: string) => {
     try {
@@ -457,15 +493,25 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <h2 className="text-3xl font-black text-primary">Upload your important documents to manage, access them anytime, and easily share or fill complex forms.</h2>
+        <h2 className="text-3xl font-black text-primary">
+          {user.marketSegment === 'global_founder'
+            ? 'Keep your founder and startup documents ready for accelerators, grants, and fundraising workflows.'
+            : 'Upload your important documents to manage, access them anytime, and easily share or fill complex forms.'}
+        </h2>
         <p className="text-muted-foreground font-medium">
-            Documents get resized, cropped, compressed and change file format according to the form requirements.
+          {user.marketSegment === 'global_founder'
+            ? 'Your founder vault is optimized for the core startup documents most global founder applications ask for.'
+            : 'Documents get resized, cropped, compressed and change file format according to the form requirements.'}
         </p>
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-1">
         <h3 className="font-semibold text-blue-900">Upload Documents</h3>
-        <p className="text-sm text-blue-800">We recommend uploading these documents for a smooth application process.</p>
+        <p className="text-sm text-blue-800">
+          {user.marketSegment === 'global_founder'
+            ? 'Start with your pitch deck, incorporation certificate, and company formation proof.'
+            : 'We recommend uploading these documents for a smooth application process.'}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -646,6 +692,25 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser 
                     </Dialog>
                 </div>
             </div>
+
+            {shouldShowFounderReminder && (
+              <div className="mb-6 rounded-3xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 shadow-sm">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  <div className="space-y-2">
+                    <p className="text-sm font-black uppercase tracking-widest text-amber-700">Founder Reminder</p>
+                    <h4 className="text-xl font-bold text-slate-900">
+                      You haven&apos;t completed your Founder & Startup details yet.
+                    </h4>
+                    <p className="text-sm text-slate-700 max-w-2xl leading-relaxed">
+                      These are repeated questions in long founder application forms. If you complete them once, it becomes much easier for Sabapplier AI extension to help fill long forms for you.
+                    </p>
+                  </div>
+                  <Button onClick={onEditFounderDetails} className="h-11 rounded-2xl px-5 font-bold shrink-0">
+                    Complete Founder Details <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <TabsContent value={activeTab} className="mt-0 space-y-4">
                 {filteredDocs.length === 0 ? (

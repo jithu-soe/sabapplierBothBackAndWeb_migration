@@ -38,6 +38,7 @@ function AppContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'home' | 'documents' | 'sharing' | 'profile'>('home');
+  const [profileEditIntent, setProfileEditIntent] = useState<'none' | 'founder'>('none');
   const [token, setToken] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -296,9 +297,26 @@ function AppContent() {
       <main className="max-w-7xl mx-auto p-6 md:p-10">
         {activeTab === 'home' && <Home user={profile} />}
         {activeTab === 'documents' && (
-          <Vault userId={profile.userId} authToken={token} user={profile} saveUser={persistUser} />
+          <Vault
+            userId={profile.userId}
+            authToken={token}
+            user={profile}
+            saveUser={persistUser}
+            onEditFounderDetails={() => {
+              setProfileEditIntent('founder');
+              setActiveTab('profile');
+            }}
+          />
         )}
-        {activeTab === 'profile' && <Profile user={profile} saveUser={persistUser} onDeleteAccount={handleDeleteAccount} />}
+        {activeTab === 'profile' && (
+          <Profile
+            user={profile}
+            saveUser={persistUser}
+            onDeleteAccount={handleDeleteAccount}
+            autoOpenFounderEditor={profileEditIntent === 'founder'}
+            onAutoOpenHandled={() => setProfileEditIntent('none')}
+          />
+        )}
         {activeTab === 'sharing' && (
           <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
             <div className="w-16 h-16 dashboard-muted-card rounded-2xl flex items-center justify-center">

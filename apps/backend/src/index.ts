@@ -212,6 +212,7 @@ const server = createServer(async (req, res) => {
         onboardingComplete: false,
         onboardingStep: 1,
         professions: [],
+        coFounders: [],
         documents: {},
         createdAt: now,
         updatedAt: now,

@@ -11,6 +11,16 @@ const documentSchema = z.object({
   folder: z.string().optional(),
 });
 
+const coFounderSchema = z.object({
+  fullName: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().min(1),
+  linkedInProfile: z.string().optional(),
+  education: z.string().optional(),
+  workExperience: z.string().optional(),
+  startupRole: z.string().optional(),
+});
+
 export const authGoogleSchema = z
   .object({
     credential: z.string().min(1).optional(),
@@ -25,6 +35,8 @@ export const profilePatchSchema = z
     email: z.string().email().optional(),
     fullName: z.string().min(1).optional(),
     avatarUrl: z.string().url().optional(),
+    countryCode: z.string().min(2).max(2).optional(),
+    marketSegment: z.enum(['india', 'global_founder']).optional(),
     onboardingComplete: z.boolean().optional(),
     onboardingStep: z.number().int().min(1).max(4).optional(),
     firstName: z.string().optional(),
@@ -48,6 +60,18 @@ export const profilePatchSchema = z
     district: z.string().optional(),
     mandal: z.string().optional(),
     pincode: z.string().optional(),
+    linkedInProfile: z.string().optional(),
+    education: z.string().optional(),
+    workExperience: z.string().optional(),
+    startupRole: z.string().optional(),
+    coFounders: z.array(coFounderSchema).optional(),
+    startupName: z.string().optional(),
+    startupWebsite: z.string().optional(),
+    startupLinkedInProfile: z.string().optional(),
+    industry: z.string().optional(),
+    startupStage: z.string().optional(),
+    incorporationDate: z.string().optional(),
+    companyType: z.string().optional(),
     documents: z.record(z.string(), documentSchema).optional(),
   })
   .strict();
