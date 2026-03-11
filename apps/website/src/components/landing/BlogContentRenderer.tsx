@@ -68,7 +68,7 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                 return;
             }
 
-            // Check for table
+            // Check for box-drawing character table
             if (trimmedLine.includes('│') || trimmedLine.includes('┌') || trimmedLine.includes('├') || trimmedLine.includes('└')) {
                 if (!inTable) {
                     inTable = true;
@@ -80,6 +80,29 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                     if (cells.length > 0) {
                         tableRows.push(cells);
                     }
+                }
+                return;
+            }
+
+            // Check for markdown pipe table (| col | col | ...)
+            if (trimmedLine.startsWith('|') && trimmedLine.endsWith('|')) {
+                // Skip separator rows like | :--- | :--- | --- |
+                const stripped = trimmedLine.replace(/\|/g, '').trim();
+                const isSeparator = stripped.length === 0 || /^[\s:|-]+$/.test(stripped);
+                if (isSeparator) {
+                    return; // skip this line entirely
+                }
+                if (!inTable) {
+                    if (currentParagraph.length > 0) {
+                        elements.push({ type: 'paragraph', content: currentParagraph.join(' ') });
+                        currentParagraph = [];
+                    }
+                    inTable = true;
+                    tableRows = [];
+                }
+                const cells = trimmedLine.split('|').map(cell => cell.trim()).filter(cell => cell !== '');
+                if (cells.length > 0) {
+                    tableRows.push(cells);
                 }
                 return;
             } else if (inTable) {
