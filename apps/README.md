@@ -72,6 +72,8 @@ Important keys:
 - Optional backend upload route keys:
   - `FIREBASE_STORAGE_BUCKET`
   - `FIREBASE_SERVICE_ACCOUNT_PATH`
+  - `FIREBASE_SERVICE_ACCOUNT_JSON`
+  - or `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`
 
 ### Website env: `apps/website/.env.local`
 Important keys:
@@ -274,7 +276,8 @@ curl -I http://127.0.0.1:3000
   - `docker compose down && docker compose up --build`
 
 - `Upload failed` from `/vault/upload`:
-  - Backend route needs `FIREBASE_STORAGE_BUCKET` and valid service account path.
+  - Backend route needs `FIREBASE_STORAGE_BUCKET` plus Firebase Admin credentials.
+  - Provide either `FIREBASE_SERVICE_ACCOUNT_PATH`, `FIREBASE_SERVICE_ACCOUNT_JSON`, or the triplet `FIREBASE_PROJECT_ID` / `FIREBASE_CLIENT_EMAIL` / `FIREBASE_PRIVATE_KEY`.
 - CORS errors:
   - Fix backend `CORS_ORIGINS` to include exact frontend and extension origins.
 - 401 token errors:

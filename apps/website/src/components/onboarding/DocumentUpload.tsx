@@ -5,11 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Upload, X, FileText, CheckCircle, Eye, Sparkles } from 'lucide-react';
-import { processVaultDocument } from '@/lib/api';
-import { uploadUserDocument } from '@/firebase/storage';
+import { processVaultDocument, uploadVaultDocument } from '@/lib/api';
 
 interface DocumentUploadProps {
-    userId: string;
     authToken: string;
     label: string;
     docType: string;
@@ -20,7 +18,6 @@ interface DocumentUploadProps {
 }
 
 export const DocumentUpload: React.FC<DocumentUploadProps> = ({
-    userId,
     authToken,
     label,
     docType,
@@ -80,7 +77,11 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
         setProgress(0);
 
         try {
-            const { fileUrl, storagePath } = await uploadUserDocument(userId, file, docType, setProgress);
+            setProgress(25);
+            const { fileUrl, storagePath } = await uploadVaultDocument(authToken, {
+                docType,
+                file
+            });
             setProgress(100);
             onUploadComplete(fileUrl);
             onStoragePathReady?.(storagePath);

@@ -7,6 +7,47 @@ function sanitizeFileName(fileName: string): string {
   return fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
+type ServiceAccountLike = {
+  projectId: string;
+  clientEmail: string;
+  privateKey: string;
+};
+
+function readServiceAccountFromEnv(): ServiceAccountLike | null {
+  if (config.firebaseServiceAccountJson) {
+    const parsed = JSON.parse(config.firebaseServiceAccountJson) as {
+      project_id?: string;
+      client_email?: string;
+      private_key?: string;
+      projectId?: string;
+      clientEmail?: string;
+      privateKey?: string;
+    };
+
+    const projectId = parsed.project_id || parsed.projectId;
+    const clientEmail = parsed.client_email || parsed.clientEmail;
+    const privateKey = parsed.private_key || parsed.privateKey;
+
+    if (projectId && clientEmail && privateKey) {
+      return {
+        projectId,
+        clientEmail,
+        privateKey: privateKey.replace(/\\n/g, '\n'),
+      };
+    }
+  }
+
+  if (config.firebaseProjectId && config.firebaseClientEmail && config.firebasePrivateKey) {
+    return {
+      projectId: config.firebaseProjectId,
+      clientEmail: config.firebaseClientEmail,
+      privateKey: config.firebasePrivateKey.replace(/\\n/g, '\n'),
+    };
+  }
+
+  return null;
+}
+
 async function getAdminBucket() {
   const appMod = await import('firebase-admin/app');
   const storageMod = await import('firebase-admin/storage');
@@ -28,7 +69,12 @@ async function getAdminBucket() {
       const raw = fs.readFileSync(servicePath, 'utf8');
       options.credential = cert(JSON.parse(raw));
     } else {
-      options.credential = applicationDefault();
+      const serviceAccount = readServiceAccountFromEnv();
+      if (serviceAccount) {
+        options.credential = cert(serviceAccount);
+      } else {
+        options.credential = applicationDefault();
+      }
     }
 
     initializeApp(options);

@@ -24,8 +24,7 @@ import {
   Download,
   ArrowRight
 } from 'lucide-react';
-import { processVaultDocument } from '@/lib/api';
-import { uploadUserDocument } from '@/firebase/storage';
+import { processVaultDocument, uploadVaultDocument } from '@/lib/api';
 import {
   Dialog,
   DialogContent,
@@ -147,14 +146,13 @@ const hasIncompleteFounderDetails = (user: UserProfile) => {
 };
 
 interface VaultProps {
-  userId: string;
   authToken: string;
   user: UserProfile;
   saveUser: (user: UserProfile) => void;
   onEditFounderDetails: () => void;
 }
 
-export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser, onEditFounderDetails }) => {
+export const Vault: React.FC<VaultProps> = ({ authToken, user, saveUser, onEditFounderDetails }) => {
   const [activeTab, setActiveTab] = useState<string>(user.marketSegment === 'global_founder' ? 'founder' : 'personal');
   const [searchQuery, setSearchQuery] = useState('');
   const [processingDoc, setProcessingDoc] = useState<string | null>(null);
@@ -298,7 +296,10 @@ export const Vault: React.FC<VaultProps> = ({ userId, authToken, user, saveUser,
 
     try {
       const normalizedDocType = docType.toLowerCase().replace(/\s+/g, '_');
-      const { fileUrl, storagePath } = await uploadUserDocument(userId, file, normalizedDocType);
+      const { fileUrl, storagePath } = await uploadVaultDocument(authToken, {
+        docType: normalizedDocType,
+        file,
+      });
       
       const tempDocs = {
           ...user.documents,

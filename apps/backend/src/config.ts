@@ -23,4 +23,8 @@ export const config = {
   rateLimitMax: Number(process.env.RATE_LIMIT_MAX || 120),
   firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET || '',
   firebaseServiceAccountPath: process.env.FIREBASE_SERVICE_ACCOUNT_PATH || '',
+  firebaseServiceAccountJson: process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '',
+  firebaseProjectId: process.env.FIREBASE_PROJECT_ID || '',
+  firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL || '',
+  firebasePrivateKey: process.env.FIREBASE_PRIVATE_KEY || '',
 };

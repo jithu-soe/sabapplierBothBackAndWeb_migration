@@ -2,6 +2,21 @@ import { UserProfile } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
 
+function fileToDataUri(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+        return;
+      }
+      reject(new Error('Failed to read file'));
+    };
+    reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
@@ -87,5 +102,25 @@ export async function processVaultDocument(
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
+  });
+}
+
+export async function uploadVaultDocument(
+  token: string,
+  payload: { docType: string; file: File }
+): Promise<{ fileUrl: string; storagePath: string; user: UserProfile }> {
+  const dataUri = await fileToDataUri(payload.file);
+
+  return apiRequest('/vault/upload', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      docType: payload.docType,
+      fileName: payload.file.name,
+      mimeType: payload.file.type || 'application/octet-stream',
+      dataUri,
+    }),
   });
 }

@@ -470,7 +470,11 @@ const server = createServer(async (req, res) => {
         return;
       } catch (error) {
         logError('Upload to Firebase Storage failed', error, { requestId, docType });
-        sendJson(req, res, 500, { error: 'Upload failed' });
+        const detail = error instanceof Error ? error.message : 'Unknown upload error';
+        sendJson(req, res, 500, {
+          error: 'Upload failed',
+          detail: process.env.NODE_ENV === 'production' ? undefined : detail,
+        });
         return;
       }
     }

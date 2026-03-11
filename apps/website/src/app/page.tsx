@@ -298,7 +298,6 @@ function AppContent() {
         {activeTab === 'home' && <Home user={profile} />}
         {activeTab === 'documents' && (
           <Vault
-            userId={profile.userId}
             authToken={token}
             user={profile}
             saveUser={persistUser}
