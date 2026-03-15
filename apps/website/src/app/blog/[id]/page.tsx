@@ -10,14 +10,15 @@ import { blogPosts } from '@/data/blogData';
 import { ArrowLeft, Share2, Bookmark, Clock, Calendar, Tag } from 'lucide-react';
 
 interface BlogDetailPageProps {
-    params: {
+    params: Promise<{
         id: string;
-    };
+    }>;
 }
 
 const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
     const router = useRouter();
-    const postId = parseInt(params.id);
+    const resolvedParams = React.use(params);
+    const postId = parseInt(resolvedParams.id);
     const post = blogPosts.find((p) => p.id === postId);
 
     if (!post) {
@@ -134,7 +135,7 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                             <h3 className="text-2xl font-bold mb-4">Never Miss an Update</h3>
                             <p className="text-blue-100 mb-6">Join 10,000+ students and professionals using SabApplier AI.</p>
                             <button
-                                onClick={() => router.push('/')}
+                                onClick={() => window.open('https://chromewebstore.google.com/detail/sabapplier-ai-smart-form/pbokcepmfdenanohfjfgkilcpgceohhl?utm_source=item-share-cb', '_blank')}
                                 className="px-8 py-3 bg-white text-blue-700 rounded-lg font-bold hover:bg-blue-50 transition-colors shadow-md"
                             >
                                 Get Started for Free

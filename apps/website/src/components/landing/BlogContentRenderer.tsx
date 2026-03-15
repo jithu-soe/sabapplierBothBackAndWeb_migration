@@ -34,7 +34,12 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                     elements.push({ type: 'paragraph', content: currentParagraph.join(' ') });
                     currentParagraph = [];
                 }
+                if (inTable && tableRows.length > 0) {
+                    elements.push({ type: 'table', rows: tableRows });
+                    tableRows = [];
+                }
                 inList = false;
+                inTable = false;
                 return;
             }
 
@@ -50,21 +55,23 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
             }
 
             // Check for headings
-            if (trimmedLine.startsWith('## ')) {
+            const h2Match = trimmedLine.match(/^##\s+(.*)/);
+            if (h2Match) {
                 if (currentParagraph.length > 0) {
                     elements.push({ type: 'paragraph', content: currentParagraph.join(' ') });
                     currentParagraph = [];
                 }
-                elements.push({ type: 'h2', content: trimmedLine.replace('## ', '') });
+                elements.push({ type: 'h2', content: h2Match[1] || '' });
                 return;
             }
 
-            if (trimmedLine.startsWith('### ')) {
+            const h3Match = trimmedLine.match(/^###\s+(.*)/);
+            if (h3Match) {
                 if (currentParagraph.length > 0) {
                     elements.push({ type: 'paragraph', content: currentParagraph.join(' ') });
                     currentParagraph = [];
                 }
-                elements.push({ type: 'h3', content: trimmedLine.replace('### ', '') });
+                elements.push({ type: 'h3', content: h3Match[1] || '' });
                 return;
             }
 
@@ -85,7 +92,7 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
             }
 
             // Check for markdown pipe table (| col | col | ...)
-            if (trimmedLine.startsWith('|') && trimmedLine.endsWith('|')) {
+            if (trimmedLine.startsWith('|')) {
                 // Skip separator rows like | :--- | :--- | --- |
                 const stripped = trimmedLine.replace(/\|/g, '').trim();
                 const isSeparator = stripped.length === 0 || /^[\s:|-]+$/.test(stripped);
@@ -100,7 +107,13 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                     inTable = true;
                     tableRows = [];
                 }
-                const cells = trimmedLine.split('|').map(cell => cell.trim()).filter(cell => cell !== '');
+                const cells = trimmedLine.split('|')
+                    .map(cell => cell.trim());
+                
+                // Remove the empty cells at the start and end of the array caused by the leading and trailing pipes
+                if (cells[0] === '') cells.shift();
+                if (cells[cells.length - 1] === '') cells.pop();
+
                 if (cells.length > 0) {
                     tableRows.push(cells);
                 }
