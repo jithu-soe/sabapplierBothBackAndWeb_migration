@@ -4,9 +4,9 @@ export type DocumentStatus = 'idle' | 'processing' | 'verified' | 'rejected';
 export type MarketSegment = 'india' | 'global_founder';
 
 export interface CoFounderProfile {
-  fullName: string;
-  email: string;
-  phone: string;
+  fullName?: string;
+  email?: string;
+  phone?: string;
   linkedInProfile?: string;
   education?: string;
   workExperience?: string;
@@ -75,4 +75,5 @@ export interface UserProfile {
 export interface AuthJwtPayload {
   userId: string;
   email: string;
+  onboardingComplete: boolean;
 }

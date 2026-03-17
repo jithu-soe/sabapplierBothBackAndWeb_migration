@@ -228,7 +228,7 @@ const server = createServer(async (req, res) => {
         });
       }
 
-      const token = issueJwt({ userId: user.userId, email: user.email });
+      const token = issueJwt({ userId: user.userId, email: user.email, onboardingComplete: user.onboardingComplete });
       const latest = await getUser(user.userId);
       sendJson(req, res, 200, { token, user: latest || user });
       return;
@@ -344,7 +344,17 @@ const server = createServer(async (req, res) => {
         return;
       }
 
-      const body = await readJsonBody(req, requestId);
+      logInfo('Vault processing started', { requestId, userId: auth.userId });
+
+      let body: any;
+      try {
+        body = await readJsonBody(req, requestId);
+      } catch (err) {
+        logError('Failed to parse JSON body for /vault/process', err, { requestId });
+        sendJson(req, res, 400, { error: 'Malformed JSON body' });
+        return;
+      }
+
       const parsed = processVaultSchema.safeParse(body || {});
       if (!parsed.success) {
         logWarn('Validation failed for /vault/process', {
@@ -364,6 +374,7 @@ const server = createServer(async (req, res) => {
       }
 
       try {
+        logInfo('Running document extraction', { requestId, docType, fileUrlSnippet: fileUrl.slice(0, 50) });
         const extractedData = await runDocumentExtraction(fileUrl, docType, mimeType || 'application/pdf', requestId);
         const now = new Date().toISOString();
         const doc: UserDocument = {
@@ -382,6 +393,7 @@ const server = createServer(async (req, res) => {
           },
         });
 
+        logInfo('Vault processing completed successfully', { requestId, docType });
         sendJson(req, res, 200, { document: doc, user: updated });
         return;
       } catch (error) {
@@ -417,7 +429,17 @@ const server = createServer(async (req, res) => {
         return;
       }
 
-      const body = await readJsonBody(req, requestId);
+      logInfo('Vault upload started', { requestId, userId: auth.userId });
+
+      let body: any;
+      try {
+        body = await readJsonBody(req, requestId);
+      } catch (err) {
+        logError('Failed to parse JSON body for /vault/upload', err, { requestId });
+        sendJson(req, res, 400, { error: 'Malformed JSON body' });
+        return;
+      }
+
       const parsed = uploadVaultSchema.safeParse(body || {});
       if (!parsed.success) {
         logWarn('Validation failed for /vault/upload', {
@@ -430,6 +452,12 @@ const server = createServer(async (req, res) => {
       }
 
       const { docType, fileName, mimeType, dataUri } = parsed.data;
+      logInfo('Decoded request data', { requestId, fileName, mimeType, dataUriSize: dataUri.length });
+
+      if (dataUri.length > 20 * 1024 * 1024) { // 20MB limit check
+        logWarn('Heavy payload detected', { requestId, dataUriSize: dataUri.length });
+      }
+
       const current = await getUser(auth.userId);
       if (!current) {
         sendJson(req, res, 404, { error: 'User profile not found' });
@@ -437,6 +465,7 @@ const server = createServer(async (req, res) => {
       }
 
       try {
+        logInfo('Decoding and uploading to storage', { requestId, docType });
         const fileBuffer = decodeDataUri(dataUri);
         const uploaded = await uploadToFirebaseStorage({
           userId: auth.userId,
@@ -462,6 +491,7 @@ const server = createServer(async (req, res) => {
           },
         });
 
+        logInfo('Vault upload completed successfully', { requestId, docType, storagePath: uploaded.storagePath });
         sendJson(req, res, 200, {
           fileUrl: uploaded.fileUrl,
           storagePath: uploaded.storagePath,

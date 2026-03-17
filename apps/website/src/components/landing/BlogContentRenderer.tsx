@@ -148,7 +148,7 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
             }
 
             // Check for emoji headings (💰, 🚀, etc.)
-            const emojiRegex = /^[💰🚀🔐🏁✅❌📊🟢⚙️🛡️🌍🎓💼🧾]/;
+            const emojiRegex = /^[💰🚀🔐🏁✅❌📊🟢⚙️🛡️🌍🌐🎓💼🧾]/u;
             if (emojiRegex.test(trimmedLine) && trimmedLine.length < 100) {
                 if (currentParagraph.length > 0) {
                     elements.push({ type: 'paragraph', content: currentParagraph.join(' ') });
@@ -242,9 +242,9 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                             </h3>
                         );
                     case 'emoji-heading':
-                        const emojiMatch = element.content?.match(/^[💰🚀🔐🏁✅❌📊🟢⚙️🛡️🌍🎓💼🧾]/);
+                        const emojiMatch = element.content?.match(/^[💰🚀🔐🏁✅❌📊🟢⚙️🛡️🌍🌐🎓💼🧾]/u);
                         const emoji = emojiMatch ? emojiMatch[0] : '';
-                        const text = element.content?.replace(/^[💰🚀🔐🏁✅❌📊🟢⚙️🛡️🌍🎓💼🧾]\s*/, '') || '';
+                        const text = element.content?.replace(/^[💰🚀🔐🏁✅❌📊🟢⚙️🛡️🌍🌐🎓💼🧾]\s*/u, '') || '';
 
                         const bgColors: Record<string, string> = {
                             '💰': 'from-yellow-400 to-orange-500',
@@ -260,14 +260,15 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                             '🌍': 'from-cyan-400 to-blue-500',
                             '🎓': 'from-blue-500 to-indigo-600',
                             '💼': 'from-amber-400 to-orange-500',
-                            '🧾': 'from-teal-400 to-emerald-600'
+                            '🧾': 'from-teal-400 to-emerald-600',
+                            '🌐': 'from-blue-500 to-indigo-600'
                         };
 
                         return (
                             <div key={index} className={`mt-10 mb-6 p-6 rounded-2xl bg-gradient-to-r ${bgColors[emoji] || 'from-blue-500 to-blue-600'} text-white shadow-lg`}>
                                 <h2 className="text-3xl font-bold flex items-center gap-3">
                                     <span className="text-5xl">{emoji}</span>
-                                    <span>{text}</span>
+                                    <span>{renderInline(text)}</span>
                                 </h2>
                             </div>
                         );

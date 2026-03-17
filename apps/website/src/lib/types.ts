@@ -2,9 +2,9 @@ export type Profession = 'Student' | 'Professional' | 'Founder' | 'Researcher' |
 export type MarketSegment = 'india' | 'global_founder';
 
 export interface CoFounderProfile {
-  fullName: string;
-  email: string;
-  phone: string;
+  fullName?: string;
+  email?: string;
+  phone?: string;
   linkedInProfile?: string;
   education?: string;
   workExperience?: string;

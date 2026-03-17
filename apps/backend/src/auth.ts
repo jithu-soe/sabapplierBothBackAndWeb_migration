@@ -37,5 +37,5 @@ export function verifyJwt(token: string): AuthJwtPayload | null {
   if (signature !== expected) return null;
   const payload = JSON.parse(b64urlDecode(encodedBody)) as AuthJwtPayload & { exp?: number };
   if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
-  return { userId: payload.userId, email: payload.email };
+  return { userId: payload.userId, email: payload.email, onboardingComplete: payload.onboardingComplete };
 }

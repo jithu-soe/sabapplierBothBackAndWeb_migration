@@ -12,9 +12,9 @@ const documentSchema = z.object({
 });
 
 const coFounderSchema = z.object({
-  fullName: z.string().min(1),
-  email: z.string().email(),
-  phone: z.string().min(1),
+  fullName: z.string().optional(),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
   linkedInProfile: z.string().optional(),
   education: z.string().optional(),
   workExperience: z.string().optional(),
