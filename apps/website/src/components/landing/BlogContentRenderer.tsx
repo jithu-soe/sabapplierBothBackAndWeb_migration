@@ -25,6 +25,13 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
         let inTable = false;
         let tableRows: string[][] = [];
 
+        const closeOpenList = () => {
+            if (inList) {
+                elements.push({ type: 'list-end' });
+                inList = false;
+            }
+        };
+
         lines.forEach((line) => {
             const trimmedLine = line.trim();
 
@@ -38,7 +45,7 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                     elements.push({ type: 'table', rows: tableRows });
                     tableRows = [];
                 }
-                inList = false;
+                closeOpenList();
                 inTable = false;
                 return;
             }
@@ -49,8 +56,8 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                     elements.push({ type: 'paragraph', content: currentParagraph.join(' ') });
                     currentParagraph = [];
                 }
+                closeOpenList();
                 elements.push({ type: 'hr' });
-                inList = false;
                 return;
             }
 
@@ -61,6 +68,7 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                     elements.push({ type: 'paragraph', content: currentParagraph.join(' ') });
                     currentParagraph = [];
                 }
+                closeOpenList();
                 elements.push({ type: 'h2', content: h2Match[1] || '' });
                 return;
             }
@@ -71,6 +79,7 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                     elements.push({ type: 'paragraph', content: currentParagraph.join(' ') });
                     currentParagraph = [];
                 }
+                closeOpenList();
                 elements.push({ type: 'h3', content: h3Match[1] || '' });
                 return;
             }
@@ -78,6 +87,7 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
             // Check for box-drawing character table
             if (trimmedLine.includes('│') || trimmedLine.includes('┌') || trimmedLine.includes('├') || trimmedLine.includes('└')) {
                 if (!inTable) {
+                    closeOpenList();
                     inTable = true;
                     tableRows = [];
                 }
@@ -104,6 +114,7 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                         elements.push({ type: 'paragraph', content: currentParagraph.join(' ') });
                         currentParagraph = [];
                     }
+                    closeOpenList();
                     inTable = true;
                     tableRows = [];
                 }
@@ -183,6 +194,7 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
     const elements = processContent(content);
     let listItems: string[] = [];
     let listKey = 0;
+    const normalizeTableCell = (value: string) => value.replace(/\*\*(.*?)\*\*/g, '$1');
 
     const renderInline = (text: string) => {
         // First split on links [label](url)
@@ -201,7 +213,7 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                         href={href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 font-semibold underline decoration-blue-300 hover:text-blue-800"
+                        className="font-semibold underline decoration-current/70 hover:opacity-80 break-words"
                     >
                         {label}
                     </a>
@@ -325,7 +337,7 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                                         <tr className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800">
                                             {headers.map((header, idx) => (
                                                 <th key={idx} className="px-6 py-4 text-left text-sm font-bold text-white uppercase tracking-wider">
-                                                    {header}
+                                                    {renderInline(normalizeTableCell(header))}
                                                 </th>
                                             ))}
                                         </tr>
@@ -341,7 +353,9 @@ const BlogContentRenderer: React.FC<BlogContentRendererProps> = ({ content }) =>
                                                     const isLastCol = cellIdx === row.length - 1;
                                                     return (
                                                         <td key={cellIdx} className={`px-6 py-4 text-sm ${isFirstCol ? 'font-semibold text-gray-900' : 'text-gray-700'
-                                                            } ${isLastCol && cell.includes('₹') ? 'text-green-600 font-bold text-base' : ''}`}>{cell}</td>
+                                                            } ${isLastCol && cell.includes('₹') ? 'text-green-600 font-bold text-base' : ''}`}>
+                                                            {renderInline(normalizeTableCell(cell))}
+                                                        </td>
                                                     );
                                                 })}
                                             </tr>

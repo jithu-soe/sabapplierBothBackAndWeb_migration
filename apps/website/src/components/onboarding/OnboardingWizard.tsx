@@ -77,9 +77,16 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
   });
   const [selectedCountryCode, setSelectedCountryCode] = React.useState(user.countryCode || '');
   const [isDetecting, setIsDetecting] = React.useState(false);
-  const isInitialMount = React.useRef(true);
-  const lastSavedUserRef = React.useRef<string>(JSON.stringify(user));
+  const [hasInteracted, setHasInteracted] = React.useState(Boolean(user.countryCode));
 
+  const isInitialMount = React.useRef(true);
+  const prevUserIdRef = React.useRef(user.userId);
+  const lastSavedUserRef = React.useRef<string>(JSON.stringify({
+    ...user,
+    coFounders: user.coFounders || []
+  }));
+
+  // 1. Incoming Sync (Parent -> Local State) - ONLY on init or actual User change
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -87,29 +94,32 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
       return;
     }
 
-    // Only update localUser from prop if the user ID changed or if it's an external update that we haven't seen
     const cleanUser = { ...user, coFounders: user.coFounders || [] };
     const userJson = JSON.stringify(cleanUser);
 
-    if (userJson !== lastSavedUserRef.current) {
+    // ✅ Hard Sync: Only if the actual User ID changed (e.g. account switch)
+    if (user.userId !== prevUserIdRef.current) {
       setLocalUser(cleanUser);
+      prevUserIdRef.current = user.userId;
       lastSavedUserRef.current = userJson;
+      return;
     }
   }, [user]);
 
+  // 2. Outgoing Sync (Local State -> Debounced Save -> Parent)
   useEffect(() => {
     const handler = setTimeout(() => {
-      const { userId: _u1, googleId: _g1, createdAt: _c1, updatedAt: _up1, ...localRest } = localUser as any;
-      const { userId: _u2, googleId: _g2, createdAt: _c2, updatedAt: _up2, ...propRest } = user as any;
+      const currentUserJson = JSON.stringify(localUser);
 
-      if (JSON.stringify(localRest) !== JSON.stringify(propRest)) {
-        lastSavedUserRef.current = JSON.stringify(localUser);
+      // Only fire save if localUser actually differs from what we last saved
+      if (lastSavedUserRef.current !== currentUserJson) {
+        lastSavedUserRef.current = currentUserJson;
         saveUser(localUser);
       }
     }, 800);
 
     return () => clearTimeout(handler);
-  }, [localUser, saveUser, user]);
+  }, [localUser, saveUser]);
 
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
@@ -126,6 +136,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
           const data = await res.json();
           if (data.countryCode) {
             setSelectedCountryCode(data.countryCode);
+            setHasInteracted(true);
           }
         } catch (err) {
           console.error("Location detection failed", err);
@@ -233,6 +244,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
     };
 
     setLocalUser(nextUser);
+    lastSavedUserRef.current = JSON.stringify(nextUser);
     saveUser(nextUser);
   };
 
@@ -247,6 +259,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
     };
 
     setLocalUser(nextUser);
+    lastSavedUserRef.current = JSON.stringify(nextUser);
     saveUser(nextUser);
   };
 
@@ -259,6 +272,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
     };
 
     setLocalUser(previousUser);
+    lastSavedUserRef.current = JSON.stringify(previousUser);
     saveUser(previousUser);
   };
 
@@ -297,7 +311,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
                   Detect Automatically
                 </Button>
               </div>
-              <Select value={selectedCountryCode} onValueChange={setSelectedCountryCode}>
+              <Select
+                value={selectedCountryCode}
+                onValueChange={(val) => {
+                  setSelectedCountryCode(val);
+                  setHasInteracted(true);
+                }}
+              >
                 <SelectTrigger className="h-12">
                   <SelectValue placeholder="Select your country" />
                 </SelectTrigger>
@@ -323,7 +343,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
               </p>
             </div>
 
-            <Button disabled={!selectedCountryCode} onClick={handleMarketConfirm} className="w-full h-12 shadow-lg shadow-primary/20">
+            <Button
+              disabled={!selectedCountryCode || !hasInteracted}
+              onClick={handleMarketConfirm}
+              className="w-full h-12 shadow-lg shadow-primary/20"
+            >
               Continue <ChevronRight className="ml-2 w-4 h-4" />
             </Button>
           </Card>
@@ -892,3 +916,4 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
     </div>
   );
 };
+
