@@ -233,13 +233,23 @@ function AppContent() {
       await deleteProfile(token);
     } catch (error) {
       console.error('Failed to delete account', error);
+      alert('Failed to delete account. Please make sure the server is running and try again.');
       return;
     }
 
+    // Clear website auth
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem('sabapplier_extension_jwt');
     localStorage.removeItem('sabapplier_extension_user');
     localStorage.removeItem('sabapplier_extension_sync_timestamp');
+
+    // Set logout flag for the background 30s poll (no auto-cleanup — bg script clears it)
+    localStorage.setItem('sabapplier_extension_logout', 'true');
+    localStorage.setItem('sabapplier_extension_logout_timestamp', Date.now().toString());
+
+    // Instantly notify extension via content-script relay (no waiting for 30s poll)
+    window.dispatchEvent(new CustomEvent('sabapplier-account-deleted'));
+
     setToken(null);
     setProfile(null);
   };
@@ -257,6 +267,15 @@ function AppContent() {
       } = updated as any; // Cast to any to handle extra fields from backend
       const saved = await saveProfile(token, mutablePatch);
       setProfile(saved.user);
+
+      // Always keep extension localStorage in sync with latest profile
+      localStorage.setItem('sabapplier_extension_user', JSON.stringify(saved.user));
+      localStorage.setItem('sabapplier_extension_sync_timestamp', Date.now().toString());
+
+      // When onboarding completes, instantly notify the extension
+      if (saved.user.onboardingComplete && !updated.onboardingComplete) {
+        window.dispatchEvent(new CustomEvent('sabapplier-onboarding-complete'));
+      }
     } catch (error) {
       console.error('Failed to save profile', error);
     }

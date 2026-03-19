@@ -77,7 +77,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
   });
   const [selectedCountryCode, setSelectedCountryCode] = React.useState(user.countryCode || '');
   const [isDetecting, setIsDetecting] = React.useState(false);
-  const [hasInteracted, setHasInteracted] = React.useState(Boolean(user.countryCode));
 
   const isInitialMount = React.useRef(true);
   const prevUserIdRef = React.useRef(user.userId);
@@ -121,6 +120,16 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
     return () => clearTimeout(handler);
   }, [localUser, saveUser]);
 
+  // 3. Auto-detect country on mount if no country pre-selected
+  const hasAutoDetectedRef = React.useRef(false);
+  useEffect(() => {
+    if (hasAutoDetectedRef.current) return;
+    if (user.countryCode) return; // already have a country, skip
+    hasAutoDetectedRef.current = true;
+    handleDetectLocation();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser");
@@ -136,7 +145,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
           const data = await res.json();
           if (data.countryCode) {
             setSelectedCountryCode(data.countryCode);
-            setHasInteracted(true);
           }
         } catch (err) {
           console.error("Location detection failed", err);
@@ -294,44 +302,29 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label>Your Country</Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleDetectLocation}
-                  disabled={isDetecting}
-                  className="text-xs h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                >
-                  {isDetecting ? (
-                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                  ) : (
-                    <MapPin className="w-3 h-3 mr-1" />
-                  )}
-                  Detect Automatically
-                </Button>
-              </div>
-              <Select
-                value={selectedCountryCode}
-                onValueChange={(val) => {
-                  setSelectedCountryCode(val);
-                  setHasInteracted(true);
-                }}
-              >
-                <SelectTrigger className="h-12">
-                  <SelectValue placeholder="Select your country" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COUNTRY_OPTIONS.map((country) => (
-                    <SelectItem key={country.code} value={country.code}>
-                      {country.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-[11px] text-muted-foreground">
-                Current selection: {detectedCountry}
-              </p>
+              <Label>Your Country</Label>
+              {isDetecting ? (
+                <div className="h-14 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                  Detecting your location…
+                </div>
+              ) : selectedCountryCode ? (
+                <div className="h-14 rounded-xl border border-blue-200 bg-blue-50 flex items-center gap-3 px-4">
+                  <MapPin className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span className="font-semibold text-blue-900">{detectedCountry}</span>
+                </div>
+              ) : (
+                <div className="h-14 rounded-xl border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-1 text-sm text-red-600">
+                  <span>Location detection failed or denied.</span>
+                  <button
+                    type="button"
+                    className="text-xs underline"
+                    onClick={handleDetectLocation}
+                  >
+                    Try again
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 space-y-2">
@@ -344,7 +337,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
             </div>
 
             <Button
-              disabled={!selectedCountryCode || !hasInteracted}
+              disabled={!selectedCountryCode || isDetecting}
               onClick={handleMarketConfirm}
               className="w-full h-12 shadow-lg shadow-primary/20"
             >
