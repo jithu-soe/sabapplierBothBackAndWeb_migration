@@ -31,21 +31,52 @@ const Footer: React.FC = () => {
                                     Privacy Policy
                                 </Link>
                             </li>
+                            <li>
+                                <Link
+                                    href="/blog"
+                                    className="text-gray-400 hover:text-white transition-colors duration-200"
+                                >
+                                    Blog
+                                </Link>
+                            </li>
                         </ul>
                     </div>
                     <div>
                         <h3 className="text-lg font-semibold mb-4">Connect With Us</h3>
                         <div className="space-y-2">
-                            <Link
-                                href="/contact"
+                            <a
+                                href="https://forms.gle/PMhxLy2VKQ9pNxH69"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center"
                             >
-                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 10.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 11-3.8-11.4" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M22 4L12 14.01l-3-3" />
+                                <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
                                 Contact Us
-                            </Link>
+                            </a>
+                            <a
+                                href="https://forms.gle/xWbT33jyCftkirBKA"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center"
+                            >
+                                <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Get Help
+                            </a>
+                            <a
+                                href="https://forms.gle/TCpW3xCkZt6CmUWZ7"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center"
+                            >
+                                <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                Report Issue
+                            </a>
                         </div>
                     </div>
                 </div>
