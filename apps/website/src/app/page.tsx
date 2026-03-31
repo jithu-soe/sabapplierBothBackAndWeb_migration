@@ -2,15 +2,17 @@
 
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { UserProfile } from '@/lib/types';
+import { DashboardTab, UserProfile } from '@/lib/types';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 import { Navbar } from '@/components/dashboard/Navbar';
 import { Home } from '@/components/dashboard/Home';
 import { Vault } from '@/components/dashboard/Vault';
 import { Profile } from '@/components/dashboard/Profile';
+import { Activity } from '@/components/dashboard/Activity';
+import { Pricing } from '@/components/dashboard/Pricing';
 import { Button } from '@/components/ui/button';
 import { Shield, Sparkles, Loader2 } from 'lucide-react';
-import { authWithGoogleCode, deleteProfile, fetchProfile, saveProfile } from '@/lib/api';
+import { authWithGoogleCode, deleteProfile, fetchProfile, saveProfile, syncMonthlySubscription } from '@/lib/api';
 import { isFirebaseConfigured } from '@/firebase/config';
 import LandingPage from '@/components/landing/LandingPage';
 
@@ -37,7 +39,7 @@ declare global {
 function AppContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'home' | 'documents' | 'sharing' | 'profile'>('home');
+  const [activeTab, setActiveTab] = useState<DashboardTab>('home');
   const [profileEditIntent, setProfileEditIntent] = useState<'none' | 'founder'>('none');
   const [token, setToken] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -263,6 +265,21 @@ function AppContent() {
         googleId: _googleId,
         createdAt: _createdAt,
         updatedAt: _updatedAt,
+        creditPlan: _creditPlan,
+        creditPlanExpiresAt: _creditPlanExpiresAt,
+        purchasedCredits: _purchasedCredits,
+        purchasedCreditsExpiresAt: _purchasedCreditsExpiresAt,
+        freeCreditsAwarded: _freeCreditsAwarded,
+        pendingCreditPurchaseType: _pendingCreditPurchaseType,
+        pendingCreditPurchaseCreatedAt: _pendingCreditPurchaseCreatedAt,
+        processedRazorpayPaymentIds: _processedRazorpayPaymentIds,
+        processedRazorpayEventIds: _processedRazorpayEventIds,
+        razorpaySubscriptionId: _razorpaySubscriptionId,
+        razorpaySubscriptionShortUrl: _razorpaySubscriptionShortUrl,
+        razorpaySubscriptionPlanId: _razorpaySubscriptionPlanId,
+        subscriptionStatus: _subscriptionStatus,
+        subscriptionCurrentStart: _subscriptionCurrentStart,
+        subscriptionCurrentEnd: _subscriptionCurrentEnd,
         ...mutablePatch
       } = updated as any; // Cast to any to handle extra fields from backend
       const saved = await saveProfile(token, mutablePatch);
@@ -315,6 +332,34 @@ function AppContent() {
 
       <main className="max-w-7xl mx-auto p-6 md:p-10">
         {activeTab === 'home' && <Home user={profile} />}
+        {activeTab === 'activity' && (
+          <Activity
+            authToken={token}
+            countryCode={profile.countryCode}
+            user={profile}
+          />
+        )}
+        {activeTab === 'pricing' && (
+          <Pricing
+            authToken={token}
+            user={profile}
+            onUserSnapshot={persistUser}
+            onBillingRefresh={async ({ syncSubscription } = {}) => {
+              if (syncSubscription) {
+                try {
+                  const res = await syncMonthlySubscription(token);
+                  setProfile(res.user);
+                  return { user: res.user, summary: null };
+                } catch (err) {
+                  console.error(err);
+                }
+              }
+              const profileRes = await fetchProfile(token);
+              setProfile(profileRes.user);
+              return { user: profileRes.user, summary: null };
+            }}
+          />
+        )}
         {activeTab === 'documents' && (
           <Vault
             authToken={token}

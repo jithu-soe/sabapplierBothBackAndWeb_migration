@@ -1,10 +1,29 @@
 export type Profession = 'Student' | 'Professional' | 'Founder' | 'Researcher' | 'Other';
 export type MarketSegment = 'india' | 'global_founder';
+export type CreditPlan = 'free' | 'monthly_100';
+export type CreditPurchaseType = 'monthly_100' | 'top_up_10';
+export type RazorpaySubscriptionStatus =
+  | 'created'
+  | 'authenticated'
+  | 'active'
+  | 'pending'
+  | 'halted'
+  | 'paused'
+  | 'cancelled'
+  | 'completed';
+export type DashboardTab = 'home' | 'activity' | 'documents' | 'sharing' | 'pricing' | 'profile';
+export type SessionStatus = 'submitted' | 'abandoned' | 'in_progress';
+export type CreditEventType =
+  | 'form_fill_agent'
+  | 'doc_upload_extract'
+  | 'extension_chat_doc'
+  | 'extension_chat_text'
+  | 'profile_sync';
 
 export interface CoFounderProfile {
-  fullName?: string;
-  email?: string;
-  phone?: string;
+  fullName: string;
+  email: string;
+  phone: string;
   linkedInProfile?: string;
   education?: string;
   workExperience?: string;
@@ -18,9 +37,24 @@ export interface UserProfile {
   avatarUrl?: string;
   countryCode?: string;
   marketSegment?: MarketSegment;
+  creditPlan?: CreditPlan;
+  creditPlanExpiresAt?: string;
+  purchasedCredits?: number;
+  purchasedCreditsExpiresAt?: string;
+  freeCreditsAwarded?: number;
+  pendingCreditPurchaseType?: CreditPurchaseType;
+  pendingCreditPurchaseCreatedAt?: string;
+  processedRazorpayPaymentIds?: string[];
+  processedRazorpayEventIds?: string[];
+  razorpaySubscriptionId?: string;
+  razorpaySubscriptionShortUrl?: string;
+  razorpaySubscriptionPlanId?: string;
+  subscriptionStatus?: RazorpaySubscriptionStatus;
+  subscriptionCurrentStart?: string;
+  subscriptionCurrentEnd?: string;
   onboardingComplete: boolean;
   onboardingStep: number;
-  
+
   // Page 1: Basic Bio & Contact
   firstName?: string;
   middleName?: string;
@@ -30,13 +64,13 @@ export interface UserProfile {
   motherName?: string;
   phone?: string;
   permanentAddress?: string;
-  
+
   // Page 2: Identity & Profession
   motherTongue?: string;
   gender?: string;
   highestQualification?: string;
   professions: Profession[];
-  
+
   // Page 3: Social & Geographic
   socialCategory?: string;
   disabilityStatus?: string;
@@ -59,7 +93,7 @@ export interface UserProfile {
   startupStage?: string;
   incorporationDate?: string;
   companyType?: string;
-  
+
   documents: Record<string, {
     fileUrl: string;
     storagePath?: string;
@@ -70,6 +104,120 @@ export interface UserProfile {
     status: 'idle' | 'processing' | 'verified' | 'rejected';
     folder?: string;
   }>;
+}
+
+export interface MonetaryPrice {
+  usd: number;
+  inr: number;
+}
+
+export interface SessionAgentLog {
+  id: string;
+  agentName: string;
+  modelName: string;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  creditsUsed: number;
+  price?: MonetaryPrice;
+  createdAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface SessionDocumentUsage {
+  id: string;
+  documentName: string;
+  eventType: Extract<CreditEventType, 'doc_upload_extract' | 'extension_chat_doc'>;
+  modelName: string;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  creditsUsed: number;
+  price?: MonetaryPrice;
+  createdAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface FormSession {
+  id: string;
+  userId: string;
+  formTitle: string;
+  websiteName: string;
+  formUrl: string;
+  examCategory: string;
+  status: SessionStatus;
+  modelName: string;
+  startedAt: string;
+  submittedAt?: string;
+  updatedAt: string;
+  creditsUsed: number;
+  price?: MonetaryPrice;
+  totalTokens: number;
+  agentCount: number;
+  agentLogs: SessionAgentLog[];
+  documents: SessionDocumentUsage[];
+  metadata?: Record<string, unknown>;
+}
+
+export interface CreditEvent {
+  id: string;
+  userId: string;
+  sessionId: string | null;
+  eventType: CreditEventType;
+  agentName: string;
+  modelName: string;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  creditsUsed: number;
+  price?: MonetaryPrice;
+  billingPeriod: string;
+  createdAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ActivitySummary {
+  totalFormsFilled: number;
+  totalCreditsUsed: number;
+  totalPrice?: MonetaryPrice;
+  docsUploaded: number;
+  creditsThisMonth: number;
+  priceThisMonth?: MonetaryPrice;
+  creditsCurrentCycle?: number;
+  priceCurrentCycle?: MonetaryPrice;
+  currentCycleStart?: string;
+  currentCycleEnd?: string;
+}
+
+export interface ActivityFilters {
+  search?: string;
+  status?: SessionStatus;
+  examCategory?: string;
+  modelName?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ActivitySessionsResponse {
+  summary: ActivitySummary;
+  sessions: FormSession[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+  availableCategories: string[];
+  availableModels: string[];
+}
+
+export interface ActivitySessionDetailResponse {
+  session: FormSession;
+  creditEvents: CreditEvent[];
+}
+
+export interface DocumentCreditEventsResponse {
+  events: CreditEvent[];
 }
 
 export const QUALIFICATIONS = [
@@ -183,9 +331,13 @@ export const COUNTRY_OPTIONS = [
 ];
 
 export const STARTUP_STAGES = [
-  'Idea',
+  'Ideation',
   'Prototype',
+  'Validation',
+  'MVP (Minimum Viable Product)',
+  'Early Traction',
   'Revenue',
+  'Scaling',
 ];
 
 export const COMPANY_TYPES = [
@@ -201,4 +353,12 @@ export const COMPANY_TYPES = [
 export function getCountryLabel(countryCode?: string): string {
   if (!countryCode) return 'Not provided';
   return COUNTRY_OPTIONS.find((country) => country.code === countryCode)?.label || countryCode;
+}
+
+export function normalizeStartupStage(startupStage?: string): string | undefined {
+  if (startupStage === 'Idea') {
+    return 'Ideation';
+  }
+
+  return startupStage;
 }

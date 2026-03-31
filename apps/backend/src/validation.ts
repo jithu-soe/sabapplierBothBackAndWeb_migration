@@ -12,13 +12,38 @@ const documentSchema = z.object({
 });
 
 const coFounderSchema = z.object({
-  fullName: z.string().optional(),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
+  fullName: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().min(1),
   linkedInProfile: z.string().optional(),
   education: z.string().optional(),
   workExperience: z.string().optional(),
   startupRole: z.string().optional(),
+});
+
+const metadataSchema = z.record(z.string(), z.unknown());
+
+const activityAgentLogSchema = z.object({
+  agentName: z.string().min(1),
+  modelName: z.string().min(1),
+  inputTokens: z.number().int().min(0).optional(),
+  outputTokens: z.number().int().min(0).optional(),
+  totalTokens: z.number().int().min(0).optional(),
+  creditsUsed: z.number().min(0).optional(),
+  createdAt: z.string().optional(),
+  metadata: metadataSchema.optional(),
+});
+
+const activityDocumentSchema = z.object({
+  documentName: z.string().min(1),
+  eventType: z.enum(['doc_upload_extract', 'extension_chat_doc']),
+  modelName: z.string().min(1),
+  inputTokens: z.number().int().min(0).optional(),
+  outputTokens: z.number().int().min(0).optional(),
+  totalTokens: z.number().int().min(0).optional(),
+  creditsUsed: z.number().min(0).optional(),
+  createdAt: z.string().optional(),
+  metadata: metadataSchema.optional(),
 });
 
 export const authGoogleSchema = z
@@ -76,6 +101,10 @@ export const profilePatchSchema = z
   })
   .strict();
 
+export const checkoutIntentSchema = z.object({
+  purchaseType: z.enum(['monthly_100', 'top_up_10']),
+});
+
 export const onboardSchema = z.object({
   step: z.number().int().min(1).max(4),
   onboardingComplete: z.boolean().optional(),
@@ -95,4 +124,38 @@ export const uploadVaultSchema = z.object({
   fileName: z.string().min(1),
   mimeType: z.string().min(1),
   dataUri: z.string().startsWith('data:'),
+});
+
+export const createFormSessionSchema = z.object({
+  formTitle: z.string().min(1),
+  websiteName: z.string().min(1),
+  formUrl: z.string().url(),
+  examCategory: z.string().min(1),
+  status: z.enum(['submitted', 'abandoned', 'in_progress']),
+  modelName: z.string().min(1),
+  startedAt: z.string().optional(),
+  submittedAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  agentLogs: z.array(activityAgentLogSchema).default([]),
+  documents: z.array(activityDocumentSchema).default([]),
+  metadata: metadataSchema.optional(),
+});
+
+export const createCreditEventSchema = z.object({
+  sessionId: z.string().uuid().nullable().optional(),
+  eventType: z.enum([
+    'form_fill_agent',
+    'doc_upload_extract',
+    'extension_chat_doc',
+    'extension_chat_text',
+    'profile_sync',
+  ]),
+  agentName: z.string().min(1),
+  modelName: z.string().min(1),
+  inputTokens: z.number().int().min(0).optional(),
+  outputTokens: z.number().int().min(0).optional(),
+  totalTokens: z.number().int().min(0).optional(),
+  creditsUsed: z.number().min(0).optional(),
+  createdAt: z.string().optional(),
+  metadata: metadataSchema.optional(),
 });

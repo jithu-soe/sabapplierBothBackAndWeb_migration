@@ -1,7 +1,8 @@
 "use client";
 
 import React from 'react';
-import { UserProfile } from '@/lib/types';
+import { ActivitySummary, UserProfile } from '@/lib/types';
+import { getCreditOverview, getPlanPriceLabel } from '@/lib/credit-plans';
 import Footer from '@/components/landing/Footer';
 
 // Hardcoded official exam portals for competitive exams
@@ -124,13 +125,14 @@ export const incubationPrograms = [
     officialLink: "https://www.alchemistaccelerator.com/apply?hsCtaTracking=158cbd02-6c3d-4216-bc77-8041cac65ee1%7C09bb0443-2928-405b-ba25-3831dbfaebce",
     category: "Accelerator",
   },
-  
+
 ];
 
 interface HomeProps {
   applications?: typeof defaultApplications;
   loadingExams?: boolean;
   user?: UserProfile;
+  summary?: ActivitySummary | null;
 }
 
 const founderResources = [
@@ -151,8 +153,10 @@ const founderResources = [
   },
 ];
 
-export const Home: React.FC<HomeProps> = ({ applications = defaultApplications, loadingExams = false, user }) => {
+export const Home: React.FC<HomeProps> = ({ applications = defaultApplications, loadingExams = false, user, summary }) => {
   const isGlobalFounder = user?.marketSegment === 'global_founder';
+  const creditOverview = user ? getCreditOverview(user, summary) : null;
+  const planPriceLabel = getPlanPriceLabel(user?.countryCode);
 
   // Loading skeleton for 7 official portals
   const LoadingSkeleton = () => (
@@ -165,6 +169,25 @@ export const Home: React.FC<HomeProps> = ({ applications = defaultApplications, 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200">
         <main className="max-w-6xl mx-auto px-4 py-8">
+          {creditOverview && (creditOverview.isLow || creditOverview.isExhausted) ? (
+            <div className={`mb-8 rounded-2xl border px-5 py-4 ${creditOverview.isExhausted ? 'border-rose-200 bg-rose-50' : 'border-amber-200 bg-amber-50'}`}>
+              <div className={`text-base font-black ${creditOverview.isExhausted ? 'text-rose-700' : 'text-amber-800'}`}>
+                {creditOverview.isExhausted
+                  ? creditOverview.plan === 'monthly_100'
+                    ? 'Your monthly cycle credits are exhausted.'
+                    : 'Your credits are exhausted.'
+                  : creditOverview.plan === 'monthly_100'
+                    ? `Only ${creditOverview.includedRemainingCredits.toFixed(2)} cycle credits left.`
+                    : `Only ${creditOverview.remainingCredits.toFixed(2)} credits left.`}
+              </div>
+              <p className={`mt-1 text-sm font-medium ${creditOverview.isExhausted ? 'text-rose-700' : 'text-amber-800'}`}>
+                {creditOverview.plan === 'monthly_100'
+                  ? 'Use the Pricing tab when this cycle reaches zero to unlock a 100-credit top-up.'
+                  : `Subscribe to the 100-credit monthly plan for ${planPriceLabel} from the Pricing tab before your balance runs out.`}
+              </p>
+            </div>
+          ) : null}
+
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-extrabold text-blue-900 mb-2 font-sans tracking-tight drop-shadow-sm" style={{ letterSpacing: '0.01em' }}>
               Founder workspace for <span className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-2 py-1 rounded shadow-sm inline-flex items-center gap-2">global startups</span>
@@ -244,9 +267,28 @@ export const Home: React.FC<HomeProps> = ({ applications = defaultApplications, 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200">
       <main className="max-w-6xl mx-auto px-4 py-8">
+        {creditOverview && (creditOverview.isLow || creditOverview.isExhausted) ? (
+          <div className={`mb-8 rounded-2xl border px-5 py-4 ${creditOverview.isExhausted ? 'border-rose-200 bg-rose-50' : 'border-amber-200 bg-amber-50'}`}>
+            <div className={`text-base font-black ${creditOverview.isExhausted ? 'text-rose-700' : 'text-amber-800'}`}>
+              {creditOverview.isExhausted
+                ? creditOverview.plan === 'monthly_100'
+                  ? 'Your monthly cycle credits are exhausted.'
+                  : 'Your credits are exhausted.'
+                : creditOverview.plan === 'monthly_100'
+                  ? `Only ${creditOverview.includedRemainingCredits.toFixed(2)} cycle credits left.`
+                  : `Only ${creditOverview.remainingCredits.toFixed(2)} credits left.`}
+            </div>
+            <p className={`mt-1 text-sm font-medium ${creditOverview.isExhausted ? 'text-rose-700' : 'text-amber-800'}`}>
+              {creditOverview.plan === 'monthly_100'
+                ? 'Use the Pricing tab when this cycle reaches zero to unlock a 100-credit top-up.'
+                : `Upgrade to 100 credits per month for ${planPriceLabel} from the Pricing tab before your balance runs out.`}
+            </p>
+          </div>
+        ) : null}
+
         {/* Hero Section */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-blue-900 mb-2 font-sans tracking-tight drop-shadow-sm" style={{letterSpacing: '0.01em'}}>
+          <h1 className="text-4xl md:text-5xl font-extrabold text-blue-900 mb-2 font-sans tracking-tight drop-shadow-sm" style={{ letterSpacing: '0.01em' }}>
             Welcome to <span className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-2 py-1 rounded shadow-sm inline-flex items-center gap-2">
               SabApplier AI
             </span>
@@ -265,7 +307,7 @@ export const Home: React.FC<HomeProps> = ({ applications = defaultApplications, 
               rel="noopener noreferrer"
               className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200"
             >
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 48 48"><g><circle fill="#fff" cx="24" cy="24" r="21"/><path fill="#ea4335" d="M23.5 22.7V9.2c4.2 0 8.1 1.7 11 4.4l-4.7 8.1c-1.7-1.6-4-2.6-6.3-2.6z"/><path fill="#4285f4" d="M23.5 38.8c-6.2 0-11.5-5.1-11.5-11.5 0-2.1.6-4.1 1.6-5.8l9.9 5.7v11.6z"/><path fill="#fbbc04" d="M35.2 13.6c3.1 2.9 5.1 7 5.1 11.7h-11.8l6.7-11.7z"/><path fill="#34a853" d="M23.5 38.8c4.2 0 8.1-1.7 11-4.4l-4.7-8.1c-1.7 1.6-4 2.6-6.3 2.6v9.9z"/><path fill="#fbbc04" d="M12.8 34.4c-3.1-2.9-5.1-7-5.1-11.7h11.8l-6.7 11.7z"/></g></svg>
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 48 48"><g><circle fill="#fff" cx="24" cy="24" r="21" /><path fill="#ea4335" d="M23.5 22.7V9.2c4.2 0 8.1 1.7 11 4.4l-4.7 8.1c-1.7-1.6-4-2.6-6.3-2.6z" /><path fill="#4285f4" d="M23.5 38.8c-6.2 0-11.5-5.1-11.5-11.5 0-2.1.6-4.1 1.6-5.8l9.9 5.7v11.6z" /><path fill="#fbbc04" d="M35.2 13.6c3.1 2.9 5.1 7 5.1 11.7h-11.8l6.7-11.7z" /><path fill="#34a853" d="M23.5 38.8c4.2 0 8.1-1.7 11-4.4l-4.7-8.1c-1.7 1.6-4 2.6-6.3 2.6v9.9z" /><path fill="#fbbc04" d="M12.8 34.4c-3.1-2.9-5.1-7-5.1-11.7h11.8l-6.7 11.7z" /></g></svg>
               Get Our Extension
             </a>
           </div>
@@ -274,7 +316,7 @@ export const Home: React.FC<HomeProps> = ({ applications = defaultApplications, 
         <div className="w-full flex justify-center mb-12">
           <div className="h-1 w-32 bg-gradient-to-r from-blue-200 via-blue-400 to-blue-200 rounded-full opacity-70"></div>
         </div>
-        
+
         {/* Incubation/Acceleration Section */}
         <div className="mb-12">
           <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
@@ -296,7 +338,7 @@ export const Home: React.FC<HomeProps> = ({ applications = defaultApplications, 
               >
                 <div className="flex items-center mb-2">
                   <svg className="w-8 h-8 text-blue-600 mr-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                   <span className="text-lg font-semibold text-gray-900 font-sans">{program.title}</span>
                 </div>

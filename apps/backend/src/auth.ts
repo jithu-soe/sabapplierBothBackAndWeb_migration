@@ -10,11 +10,11 @@ function b64urlDecode(input: string): string {
   return Buffer.from(input, 'base64url').toString('utf8');
 }
 
-export function issueJwt(payload: AuthJwtPayload): string {
+export function issueJwt(payload: AuthJwtPayload, expiresInSeconds: number = 7 * 24 * 60 * 60): string {
   const header = { alg: 'HS256', typ: 'JWT' };
   const body = {
     ...payload,
-    exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
+    exp: Math.floor(Date.now() / 1000) + expiresInSeconds,
   };
   const encodedHeader = b64url(JSON.stringify(header));
   const encodedBody = b64url(JSON.stringify(body));
@@ -37,5 +37,5 @@ export function verifyJwt(token: string): AuthJwtPayload | null {
   if (signature !== expected) return null;
   const payload = JSON.parse(b64urlDecode(encodedBody)) as AuthJwtPayload & { exp?: number };
   if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
-  return { userId: payload.userId, email: payload.email, onboardingComplete: payload.onboardingComplete };
+  return { userId: payload.userId, email: payload.email, scope: payload.scope };
 }

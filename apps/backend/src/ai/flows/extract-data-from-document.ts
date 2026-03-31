@@ -8,7 +8,7 @@
  */
 
 import { ai } from '../genkit';
-import {z} from 'genkit';
+import { z } from 'genkit';
 
 const ExtractDataFromDocumentInputSchema = z.object({
   fileUri: z.string().describe("The URI returned by the Gemini File API."),
@@ -19,6 +19,14 @@ export type ExtractDataFromDocumentInput = z.infer<typeof ExtractDataFromDocumen
 
 const ExtractDataFromDocumentOutputSchema = z.object({
   extractedData: z.record(z.string(), z.any()).describe('The extracted data from the document as a JSON object.'),
+  usage: z.object({
+    inputTokens: z.number().int().min(0).optional(),
+    outputTokens: z.number().int().min(0).optional(),
+    totalTokens: z.number().int().min(0).optional(),
+    inputImages: z.number().int().min(0).optional(),
+    thoughtsTokens: z.number().int().min(0).optional(),
+    cachedContentTokens: z.number().int().min(0).optional(),
+  }).optional(),
 });
 export type ExtractDataFromDocumentOutput = z.infer<typeof ExtractDataFromDocumentOutputSchema>;
 
@@ -37,8 +45,8 @@ export async function extractDataFromDocument(input: ExtractDataFromDocumentInpu
 
 const prompt = ai.definePrompt({
   name: 'extractDataFromDocumentPrompt',
-  input: {schema: ExtractDataFromDocumentInputSchema},
-  output: {schema: InternalPromptOutputSchema},
+  input: { schema: ExtractDataFromDocumentInputSchema },
+  output: { schema: InternalPromptOutputSchema },
   prompt: `You are an expert in document analysis and data extraction. Your task is to extract all relevant fields from the given document.
 
 Document Type: {{{docType}}}
@@ -59,8 +67,9 @@ const extractDataFromDocumentFlow = ai.defineFlow(
     outputSchema: ExtractDataFromDocumentOutputSchema,
   },
   async (input: ExtractDataFromDocumentInput) => {
-    const { output } = await prompt(input);
-    
+    const response = await prompt(input);
+    const { output, usage } = response;
+
     // Transform the array back into the record format expected by the frontend
     const extractedData: Record<string, any> = {};
     if (output?.fields) {
@@ -68,7 +77,19 @@ const extractDataFromDocumentFlow = ai.defineFlow(
         extractedData[f.key] = f.value;
       });
     }
-    
-    return { extractedData };
+
+    return {
+      extractedData,
+      usage: usage
+        ? {
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens,
+          totalTokens: usage.totalTokens,
+          inputImages: usage.inputImages,
+          thoughtsTokens: usage.thoughtsTokens,
+          cachedContentTokens: usage.cachedContentTokens,
+        }
+        : undefined,
+    };
   }
 );

@@ -9,19 +9,22 @@ const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY;
 const geminiClient = new GoogleGenAI({ apiKey });
 
 export async function uploadFileToGemini(fileUrl: string, mimeType: string): Promise<string> {
+  const response = await fetch(fileUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch file from URL: ${response.statusText}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  return uploadBufferToGemini(buffer, mimeType);
+}
+
+export async function uploadBufferToGemini(buffer: Buffer, mimeType: string): Promise<string> {
   // Create a temp file path
   const tempFilePath = join(tmpdir(), `upload-${Date.now()}-${Math.random().toString(36).substring(7)}`);
-  
+
   try {
-    // 1. Download the file from the URL (Firebase Storage)
-    console.log(`Downloading file from: ${fileUrl}`);
-    const response = await fetch(fileUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch file from URL: ${response.statusText}`);
-    }
-    
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // 1. Write the source file to a temp location for Gemini upload
     await writeFile(tempFilePath, buffer);
 
     // 2. Upload to Gemini
@@ -30,11 +33,11 @@ export async function uploadFileToGemini(fileUrl: string, mimeType: string): Pro
       file: tempFilePath,
       config: { mimeType },
     });
-    
+
     // The response IS the file object in the newer SDK
-    const uploadedFile = uploadResponse; 
+    const uploadedFile = uploadResponse;
     if (!uploadedFile) {
-        throw new Error("File upload response did not contain file metadata.");
+      throw new Error("File upload response did not contain file metadata.");
     }
 
     console.log(`File uploaded: ${uploadedFile.name}`);
@@ -58,6 +61,6 @@ export async function uploadFileToGemini(fileUrl: string, mimeType: string): Pro
     throw error;
   } finally {
     // 4. Cleanup local temp file
-    await unlink(tempFilePath).catch(() => {});
+    await unlink(tempFilePath).catch(() => { });
   }
 }

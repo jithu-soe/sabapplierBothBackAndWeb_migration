@@ -16,6 +16,7 @@ import {
   STARTUP_STAGES,
   COMPANY_TYPES,
   getCountryLabel,
+  normalizeStartupStage,
 } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -73,6 +74,7 @@ function createEmptyCoFounder(): CoFounderProfile {
 export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUser }) => {
   const [localUser, setLocalUser] = React.useState<UserProfile>({
     ...user,
+    startupStage: normalizeStartupStage(user.startupStage),
     coFounders: user.coFounders || [],
   });
   const [selectedCountryCode, setSelectedCountryCode] = React.useState(user.countryCode || '');
@@ -93,7 +95,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
       return;
     }
 
-    const cleanUser = { ...user, coFounders: user.coFounders || [] };
+    const cleanUser = {
+      ...user,
+      startupStage: normalizeStartupStage(user.startupStage),
+      coFounders: user.coFounders || [],
+    };
     const userJson = JSON.stringify(cleanUser);
 
     // ✅ Hard Sync: Only if the actual User ID changed (e.g. account switch)
@@ -127,7 +133,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
     if (user.countryCode) return; // already have a country, skip
     hasAutoDetectedRef.current = true;
     handleDetectLocation();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDetectLocation = () => {
@@ -909,4 +915,3 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ user, saveUs
     </div>
   );
 };
-

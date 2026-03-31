@@ -17,6 +17,8 @@ export const config = {
   dbHost: process.env.DB_HOST || '',
   dbPort: Number(process.env.DB_PORT || 5432),
   dbName: process.env.DB_NAME || '',
+  mongoUri: process.env.MONGODB_URI || '',
+  mongoDbName: process.env.MONGODB_DB_NAME || process.env.MONGO_DB_NAME || 'formAutofill',
   dbSslCaPath: process.env.DB_SSL_CA_PATH || '',
   dbRejectUnauthorized: process.env.DB_REJECT_UNAUTHORIZED !== 'false',
   rateLimitWindowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000),
@@ -27,4 +29,8 @@ export const config = {
   firebaseProjectId: process.env.FIREBASE_PROJECT_ID || '',
   firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL || '',
   firebasePrivateKey: process.env.FIREBASE_PRIVATE_KEY || '',
+  razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
+  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || '',
+  razorpayMonthlyPlanId: process.env.RAZORPAY_MONTHLY_PLAN_ID || '',
+  razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
 };
