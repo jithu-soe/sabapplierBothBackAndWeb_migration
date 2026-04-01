@@ -3,7 +3,6 @@
 import React from 'react';
 import { ActivitySummary, UserProfile } from '@/lib/types';
 import { getCreditOverview, getPlanPriceLabel } from '@/lib/credit-plans';
-import Footer from '@/components/landing/Footer';
 
 // Hardcoded official exam portals for competitive exams
 export const defaultApplications = [
@@ -167,8 +166,7 @@ export const Home: React.FC<HomeProps> = ({ applications = defaultApplications, 
 
   if (isGlobalFounder) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200">
-        <main className="max-w-6xl mx-auto px-4 py-8">
+      <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {creditOverview && (creditOverview.isLow || creditOverview.isExhausted) ? (
             <div className={`mb-8 rounded-2xl border px-5 py-4 ${creditOverview.isExhausted ? 'border-rose-200 bg-rose-50' : 'border-amber-200 bg-amber-50'}`}>
               <div className={`text-base font-black ${creditOverview.isExhausted ? 'text-rose-700' : 'text-amber-800'}`}>
@@ -258,15 +256,12 @@ export const Home: React.FC<HomeProps> = ({ applications = defaultApplications, 
               ))}
             </div>
           </div>
-        </main>
-        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200">
-      <main className="max-w-6xl mx-auto px-4 py-8">
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {creditOverview && (creditOverview.isLow || creditOverview.isExhausted) ? (
           <div className={`mb-8 rounded-2xl border px-5 py-4 ${creditOverview.isExhausted ? 'border-rose-200 bg-rose-50' : 'border-amber-200 bg-amber-50'}`}>
             <div className={`text-base font-black ${creditOverview.isExhausted ? 'text-rose-700' : 'text-amber-800'}`}>
@@ -395,8 +390,6 @@ export const Home: React.FC<HomeProps> = ({ applications = defaultApplications, 
             </div>
           )}
         </div>
-      </main>
-      <Footer />
     </div>
   );
 };

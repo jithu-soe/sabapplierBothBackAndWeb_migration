@@ -4,12 +4,13 @@ import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { DashboardTab, UserProfile } from '@/lib/types';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
-import { Navbar } from '@/components/dashboard/Navbar';
+import { Sidebar } from '@/components/dashboard/Sidebar';
 import { Home } from '@/components/dashboard/Home';
 import { Vault } from '@/components/dashboard/Vault';
 import { Profile } from '@/components/dashboard/Profile';
 import { Activity } from '@/components/dashboard/Activity';
 import { Pricing } from '@/components/dashboard/Pricing';
+import { Sharing } from '@/components/dashboard/Sharing';
 import { Button } from '@/components/ui/button';
 import { Shield, Sparkles, Loader2 } from 'lucide-react';
 import { authWithGoogleCode, deleteProfile, fetchProfile, saveProfile, syncMonthlySubscription } from '@/lib/api';
@@ -63,6 +64,10 @@ function AppContent() {
             if (response.error || !response.code) {
               throw new Error(response.error || 'Google authorization failed');
             }
+            
+            // Show loading spinner while backend authenticates the code
+            setLoading(true);
+            
             const authResult = await authWithGoogleCode(response.code);
             localStorage.setItem(TOKEN_KEY, authResult.token);
 
@@ -75,6 +80,7 @@ function AppContent() {
             setProfile(authResult.user);
           } catch (error) {
             console.error('Login failed', error);
+            setLoading(false);
           }
         },
       });
@@ -322,15 +328,16 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen dashboard-shell">
-      <Navbar
+    <div className="flex min-h-screen bg-slate-50 w-full overflow-hidden">
+      <Sidebar
         user={profile}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onLogout={handleLogout}
       />
 
-      <main className="max-w-7xl mx-auto p-6 md:p-10">
+      <div className="flex-1 lg:ml-[280px] w-full min-w-0 flex flex-col min-h-screen pt-16 lg:pt-0">
+        <main className="flex-1 w-full max-w-[1600px] mx-auto p-4 md:p-8 lg:p-10">
         {activeTab === 'home' && <Home user={profile} />}
         {activeTab === 'activity' && (
           <Activity
@@ -381,28 +388,21 @@ function AppContent() {
           />
         )}
         {activeTab === 'sharing' && (
-          <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-            <div className="w-16 h-16 dashboard-muted-card rounded-2xl flex items-center justify-center">
-              <Sparkles className="w-8 h-8 text-blue-500" />
-            </div>
-            <h2 className="text-2xl font-black text-primary">Data Sharing Coming Soon</h2>
-            <p className="text-muted-foreground max-w-sm">
-              Securely share your verified vault data with universities, employers, and banks with a single OTP.
-            </p>
-          </div>
+          <Sharing user={profile} />
         )}
-      </main>
+        </main>
 
-      <footer className="max-w-7xl mx-auto px-6 py-10 border-t border-blue-100 flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] font-bold text-[#1f3f7a]/70 uppercase tracking-widest">
-        <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4" /> Sabapplier AI Identity Vault
-        </div>
-        <div className="flex gap-6">
-          <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-          <a href="#" className="hover:text-primary transition-colors">Security</a>
-          <a href="#" className="hover:text-primary transition-colors">Help</a>
-        </div>
-      </footer>
+        <footer className="max-w-[1600px] mx-auto w-full px-6 py-8 mt-auto border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-slate-400" /> Sabapplier AI Identity Vault
+          </div>
+          <div className="flex gap-6">
+            <a href="#" className="hover:text-slate-800 transition-colors">Privacy</a>
+            <a href="#" className="hover:text-slate-800 transition-colors">Security</a>
+            <a href="#" className="hover:text-slate-800 transition-colors">Help</a>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }

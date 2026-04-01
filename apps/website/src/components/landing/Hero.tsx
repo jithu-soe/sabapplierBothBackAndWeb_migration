@@ -171,7 +171,7 @@ const Hero: React.FC<HeroProps> = ({ onSignup }) => {
                                                 <div className="h-8 bg-gray-100 rounded border relative overflow-hidden">
                                                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-600 transform -translate-x-full animate-slide-in opacity-20"></div>
                                                     <div className="relative z-10 px-2 py-1.5 text-xs text-gray-700">
-                                                        <span className="typewriter">Ritesh Kumar</span>
+                                                        <span className="typewriter">Anirudh pal</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -181,7 +181,7 @@ const Hero: React.FC<HeroProps> = ({ onSignup }) => {
                                                 <div className="h-8 bg-gray-100 rounded border relative overflow-hidden">
                                                     <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-green-600 transform -translate-x-full animate-slide-in-delay opacity-20"></div>
                                                     <div className="relative z-10 px-2 py-1.5 text-xs text-gray-700">
-                                                        <span className="typewriter-delay">ritesh@example.com</span>
+                                                        <span className="typewriter-delay">Anirudh@example.com</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -227,7 +227,7 @@ const Hero: React.FC<HeroProps> = ({ onSignup }) => {
                                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
                                         </svg>
-                                        95% Faster
+                                        98% Faster
                                     </div>
                                 </div>
 
