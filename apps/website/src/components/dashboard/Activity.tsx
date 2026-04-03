@@ -39,6 +39,7 @@ interface ActivityProps {
   countryCode?: string;
   user?: UserProfile;
   summary?: ActivitySummary | null;
+  onSummaryUpdate?: (summary: ActivitySummary) => void;
 }
 
 const STATUS_LABELS: Record<SessionStatus, string> = {
@@ -150,7 +151,7 @@ function getDocumentLabel(event: CreditEvent): string {
   return formatDocType(docType);
 }
 
-export const Activity: React.FC<ActivityProps> = ({ authToken, countryCode, user, summary }) => {
+export const Activity: React.FC<ActivityProps> = ({ authToken, countryCode, user, summary, onSummaryUpdate }) => {
   const [searchInput, setSearchInput] = useState('');
   const [filters, setFilters] = useState<ActivityFilters>({ page: 1, pageSize: 20 });
   const [activity, setActivity] = useState<ActivitySessionsResponse | null>(null);
@@ -188,6 +189,9 @@ export const Activity: React.FC<ActivityProps> = ({ authToken, countryCode, user
 
         setActivity(response);
         setError(null);
+        if (onSummaryUpdate) {
+          onSummaryUpdate(response.summary);
+        }
         setSelectedSessionId((current) => {
           if (current && response.sessions.some((session) => session.id === current)) {
             return current;
@@ -366,7 +370,7 @@ export const Activity: React.FC<ActivityProps> = ({ authToken, countryCode, user
           icon={<Coins className="h-5 w-5 text-[#2F56C0]" />}
           label="Total Credits Used"
           value={activitySummary ? formatCredits(activitySummary.totalCreditsUsed) : '--'}
-          helper={activitySummary ? formatPricePair(activitySummary.totalPrice, countryCode) : 'Across tracked activity'}
+          helper={/* activitySummary ? formatPricePair(activitySummary.totalPrice, countryCode) : */ 'Across tracked activity'}
         />
         <SummaryCard
           icon={<Sparkles className="h-5 w-5 text-[#2F56C0]" />}
@@ -385,7 +389,7 @@ export const Activity: React.FC<ActivityProps> = ({ authToken, countryCode, user
           icon={<CalendarDays className="h-5 w-5 text-[#2F56C0]" />}
           label={cycleLabel}
           value={activitySummary && cycleCreditsValue != null ? formatCredits(cycleCreditsValue) : '--'}
-          helper={activitySummary ? `${formatPricePair(cyclePriceValue, countryCode)} • ${cycleHelperText}` : cycleHelperText}
+          helper={/* activitySummary ? `${formatPricePair(cyclePriceValue, countryCode)} • ${cycleHelperText}` : */ cycleHelperText}
         />
       </section>
 
@@ -447,6 +451,7 @@ export const Activity: React.FC<ActivityProps> = ({ authToken, countryCode, user
             ]}
           />
 
+          {/* DEVELOPER ONLY — All models filter (hidden from normal users)
           <FilterSelect
             value={filters.modelName || 'all'}
             placeholder="All models"
@@ -465,6 +470,7 @@ export const Activity: React.FC<ActivityProps> = ({ authToken, countryCode, user
               })),
             ]}
           />
+          */}
 
           <Input
             type="date"
@@ -551,17 +557,21 @@ export const Activity: React.FC<ActivityProps> = ({ authToken, countryCode, user
                               <div className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${STATUS_CLASSES[session.status]}`}>
                                 {STATUS_LABELS[session.status]}
                               </div>
+                              {/* DEVELOPER ONLY — model name badge (hidden from normal users)
                               <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-600">
                                 {session.modelName}
                               </Badge>
+                              */}
                             </div>
                           </div>
 
                           <div className="grid gap-2 text-sm text-slate-500 lg:text-right">
                             <div className="font-semibold text-[#17316d]">{formatCredits(session.creditsUsed)}</div>
-                            <div>{formatPrice(session.price, countryCode)}</div>
+                            {/* <div>{formatPrice(session.price, countryCode)}</div> */}
                             <div>{formatDateTime(session.submittedAt || session.updatedAt)}</div>
+                            {/* DEVELOPER ONLY — token count (hidden from normal users)
                             <div>{formatTokenCount(session.totalTokens)} tokens</div>
+                            */}
                           </div>
                         </div>
                       </button>
@@ -614,7 +624,14 @@ export const Activity: React.FC<ActivityProps> = ({ authToken, countryCode, user
           </CardContent>
         </Card>
 
-        <Card className="dashboard-card rounded-[24px] border-[#dbe4fa]">
+        {/* ============================================================
+            DEVELOPER ONLY — Session Detail Panel
+            Uncomment the block below to enable the Session Detail card.
+            This section is hidden from normal users intentionally.
+            It shows: token counts, credit distribution, per-agent usage,
+            document processing costs, and related credit events.
+            ============================================================ */}
+        {/* <Card className="dashboard-card rounded-[24px] border-[#dbe4fa]">
           <CardHeader className="pb-4">
             <CardTitle className="text-xl font-black text-[#17316d]">Session Detail</CardTitle>
             <CardDescription>Credit distribution, token counts, and related events for the selected session.</CardDescription>
@@ -648,7 +665,6 @@ export const Activity: React.FC<ActivityProps> = ({ authToken, countryCode, user
                     <DetailStat label="Model" value={selectedSession.modelName} />
                     <DetailStat label="Submitted" value={formatDateTime(selectedSession.submittedAt || selectedSession.updatedAt)} />
                     <DetailStat label="Total Session Credits" value={formatCredits(selectedSession.creditsUsed)} />
-                    <DetailStat label="Estimated Price" value={formatPricePair(selectedSession.price, countryCode)} />
                     <DetailStat label="Total Tokens" value={formatTokenCount(selectedSession.totalTokens)} />
                     <DetailStat label="Agents Involved" value={String(selectedSession.agentCount)} />
                   </div>
@@ -701,7 +717,6 @@ export const Activity: React.FC<ActivityProps> = ({ authToken, countryCode, user
                             </div>
                             <div className="text-right">
                               <div className="font-bold text-[#17316d]">{formatCredits(agent.creditsUsed)}</div>
-                              <div className="text-xs text-slate-500">{formatPrice(agent.price, countryCode)}</div>
                               <div className="text-xs text-slate-500">{formatTokenCount(agent.totalTokens)} tokens</div>
                             </div>
                           </div>
@@ -727,7 +742,6 @@ export const Activity: React.FC<ActivityProps> = ({ authToken, countryCode, user
                           </div>
                           <div className="text-right">
                             <div className="font-bold text-[#17316d]">{formatCredits(document.creditsUsed)}</div>
-                            <div className="text-xs text-slate-500">{formatPrice(document.price, countryCode)}</div>
                             <div className="text-xs text-slate-500">{formatTokenCount(document.totalTokens)} tokens</div>
                           </div>
                         </div>
@@ -753,7 +767,6 @@ export const Activity: React.FC<ActivityProps> = ({ authToken, countryCode, user
                             </div>
                             <div className="text-right">
                               <div className="font-bold text-[#17316d]">{formatCredits(event.creditsUsed)}</div>
-                              <div className="text-xs text-slate-500">{formatPrice(event.price, countryCode)}</div>
                               <div className="text-xs text-slate-500">{formatTokenCount(event.totalTokens)} tokens</div>
                             </div>
                           </div>
@@ -777,7 +790,7 @@ export const Activity: React.FC<ActivityProps> = ({ authToken, countryCode, user
               </div>
             )}
           </CardContent>
-        </Card>
+        </Card> */}
       </section>
 
       <Dialog open={documentDialogOpen} onOpenChange={setDocumentDialogOpen}>
@@ -823,7 +836,7 @@ export const Activity: React.FC<ActivityProps> = ({ authToken, countryCode, user
 
                         <div className="grid gap-2 text-sm text-slate-500 lg:text-right">
                           <div className="font-semibold text-[#17316d]">{formatCredits(event.creditsUsed)}</div>
-                          <div>{formatPrice(event.price, countryCode)}</div>
+                          {/* <div>{formatPrice(event.price, countryCode)}</div> */}
                           <div>{formatTokenCount(event.totalTokens)} total tokens</div>
                           <div>
                             {formatTokenCount(event.inputTokens)} in • {formatTokenCount(event.outputTokens)} out

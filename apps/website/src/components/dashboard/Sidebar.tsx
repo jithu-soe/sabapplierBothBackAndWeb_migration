@@ -4,9 +4,10 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { ActivitySummary, DashboardTab, UserProfile } from '@/lib/types';
 import { getCreditOverview } from '@/lib/credit-plans';
-import { LogOut, Home, FileText, Share2, User, Menu, ChevronUp, Activity, Coins, ShieldCheck } from 'lucide-react';
+import { LogOut, Home, FileText, Share2, User, Menu, ChevronUp, Activity, Coins, ShieldCheck, MoreHorizontal, Bug, HelpCircle, Mail, Settings, Linkedin, Twitter, Slack, Instagram, Facebook, Youtube } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { SettingsDialog } from './SettingsDialog';
 
 interface SidebarProps {
   user: UserProfile;
@@ -14,6 +15,7 @@ interface SidebarProps {
   activeTab: DashboardTab;
   setActiveTab: (tab: DashboardTab) => void;
   onLogout: () => void;
+  onDeleteAccount?: () => void;
   billingSyncState?: 'idle' | 'polling' | 'success' | 'error';
   billingSyncLabel?: string | null;
 }
@@ -24,10 +26,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   setActiveTab,
   onLogout,
+  onDeleteAccount,
   billingSyncState = 'idle',
   billingSyncLabel = null,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   const userInitial = user.firstName?.[0] || user.fullName?.[0] || 'U';
   const creditOverview = getCreditOverview(user, summary);
@@ -46,10 +50,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     icon: React.ReactNode;
   }> = [
       { key: 'home', label: 'Home', icon: <Home className="w-6 h-6" /> },
-      { key: 'activity', label: 'My Activity', icon: <Activity className="w-6 h-6" /> },
       { key: 'documents', label: 'Vault', icon: <FileText className="w-6 h-6" /> },
       { key: 'sharing', label: 'Sharing', icon: <Share2 className="w-6 h-6" /> },
-      { key: 'pricing', label: 'Pricing', icon: <Coins className="w-6 h-6" /> },
+      { key: 'activity', label: 'My Activity', icon: <Activity className="w-6 h-6" /> },
       { key: 'profile', label: 'Profile', icon: <User className="w-6 h-6" /> },
     ];
 
@@ -109,24 +112,103 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </DropdownMenuTrigger>
       {/* Dropdown renders upwards on desktop */}
-      <DropdownMenuContent align="start" side="top" sideOffset={12} className="w-[260px] rounded-2xl shadow-xl border-slate-200 p-2">
+      <DropdownMenuContent align="start" alignOffset={-16} side="top" sideOffset={12} className="w-[280px] rounded-[2rem] shadow-2xl border-slate-100 p-2 overflow-hidden bg-white/95 backdrop-blur-sm">
         <DropdownMenuItem
-          className="p-3 font-semibold text-slate-800 rounded-xl cursor-pointer"
+          className="p-3.5 font-bold text-slate-800 rounded-2xl cursor-pointer hover:bg-slate-100/80 transition-colors"
           onClick={() => {
             setActiveTab('profile');
             if (isMobile) setIsMobileMenuOpen(false);
           }}
         >
-          <User className="w-5 h-5 mr-3" />
+          <User className="w-5 h-5 mr-3 text-slate-400" />
           View Profile
         </DropdownMenuItem>
-        <DropdownMenuSeparator className="my-1 bg-slate-100" />
+        <DropdownMenuSeparator className="my-1.5 bg-slate-100" />
         <DropdownMenuItem
-          className="p-3 font-semibold text-rose-600 focus:bg-rose-50 rounded-xl cursor-pointer focus:text-rose-700"
+          className="p-3.5 font-bold text-rose-600 focus:bg-rose-50 rounded-2xl cursor-pointer focus:text-rose-700 hover:bg-rose-50/80 transition-colors"
           onClick={onLogout}
         >
           <LogOut className="w-5 h-5 mr-3" />
           Log out @{user.firstName || 'user'}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const MoreMenu = ({ isMobile = false }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className={`flex items-center gap-4 py-3 px-4 w-full rounded-full transition-all font-[500] text-slate-600 hover:bg-slate-100 hover:text-slate-900 text-xl`}
+        >
+          <div className="transition-transform">
+            <Settings className="w-6 h-6" />
+          </div>
+          <span className="tracking-tight">More</span>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        alignOffset={-16}
+        side="top"
+        sideOffset={12}
+        className="w-[280px] rounded-[2.2rem] shadow-2xl border-slate-100 p-3 overflow-hidden bg-white/95 backdrop-blur-sm z-50"
+      >
+        {/* Social Links Row */}
+        <div className="px-3 pt-3 pb-2">
+          <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 px-1">Follow Us</div>
+          <div className="flex items-center justify-start gap-4">
+            {[
+              { icon: <Youtube className="w-5 h-5" />, href: "https://www.youtube.com/@sabapplier", color: "hover:bg-red-50 hover:text-red-600" },
+              { icon: <Instagram className="w-5 h-5" />, href: "https://www.instagram.com/sabapplier?igsh=MWRwZW9qZ294dmhrdw%3D%3D", color: "hover:bg-pink-50 hover:text-pink-600" },
+              { icon: <Linkedin className="w-5 h-5" />, href: "https://www.linkedin.com/company/sabapplier?trk=blended-typeahead", color: "hover:bg-blue-50 hover:text-blue-600" },
+            ].map((social, idx) => (
+              <a
+                key={idx}
+                href={social.href}
+                target="_blank"
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center text-slate-400 transition-all active:scale-95 ${social.color}`}
+              >
+                {social.icon}
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <DropdownMenuSeparator className="my-2 bg-slate-100" />
+
+        {/* Support Section */}
+        <div className="space-y-1">
+          <DropdownMenuLabel className="text-[10px] font-black uppercase text-slate-400 tracking-widest py-2 px-4">Support</DropdownMenuLabel>
+          <DropdownMenuItem asChild className="p-3.5 font-bold text-slate-800 rounded-2xl cursor-pointer hover:bg-slate-100/80 transition-colors">
+            <a href="https://forms.gle/TCpW3xCkZt6CmUWZ7" target="_blank" rel="noopener noreferrer">
+              <Bug className="w-5 h-5 mr-3 text-slate-400" />
+              Report Issue
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className="p-3.5 font-bold text-slate-800 rounded-2xl cursor-pointer hover:bg-slate-100/80 transition-colors">
+            <a href="https://forms.gle/xWbT33jyCftkirBKA" target="_blank" rel="noopener noreferrer">
+              <HelpCircle className="w-5 h-5 mr-3 text-slate-400" />
+              Get Help
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className="p-3.5 font-bold text-slate-800 rounded-2xl cursor-pointer hover:bg-slate-100/80 transition-colors">
+            <a href="https://forms.gle/PMhxLy2VKQ9pNxH69" target="_blank" rel="noopener noreferrer">
+              <Mail className="w-5 h-5 mr-3 text-slate-400" />
+              Contact Us
+            </a>
+          </DropdownMenuItem>
+        </div>
+
+        <DropdownMenuSeparator className="my-2 bg-slate-100" />
+
+        {/* Settings Button */}
+        <DropdownMenuItem
+          className="p-3.5 font-black text-slate-900 rounded-2xl cursor-pointer hover:bg-blue-50 transition-colors group"
+          onClick={() => setIsSettingsOpen(true)}
+        >
+          <Settings className="w-5 h-5 mr-3 text-slate-400 group-hover:text-blue-600 transition-colors" />
+          Settings
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -164,56 +246,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <NavItem key={tab.key} tab={tab} />
             ))}
 
-            {/* Billing Status Badge embedded in menu rhythm */}
-            <div className="mt-8 px-4">
-              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Status</div>
-              <div
-                className={`flex items-center gap-2 rounded-xl p-3 text-sm font-semibold border ${creditOverview.isExhausted
-                  ? 'border-rose-200 bg-rose-50 text-rose-700'
-                  : creditOverview.isLow
-                    ? 'border-amber-200 bg-amber-50 text-amber-800'
-                    : 'border-slate-200 bg-slate-50 text-slate-700'
-                  }`}
-              >
-                <Coins className="h-5 w-5" />
-                <span>{creditBadgeLabel}</span>
-              </div>
-              {billingSyncState !== 'idle' && billingSyncLabel && (
-                <div
-                  className={`mt-2 flex items-center gap-2 rounded-xl p-2.5 text-xs font-semibold border ${billingSyncState === 'error'
-                    ? 'border-rose-200 bg-rose-50 text-rose-700'
-                    : billingSyncState === 'success'
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                      : 'border-slate-200 bg-slate-50 text-[#1f3f87]'
-                    }`}
-                >
-                  <span>{billingSyncState === 'polling' ? 'Syncing...' : billingSyncLabel}</span>
-                </div>
-              )}
-            </div>
+
           </nav>
 
-          {/* Bottom App/Extension Call to Action */}
-          <div className="mt-auto mb-4 px-2">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100/50 p-4 rounded-2xl shadow-sm">
-              <div className="flex items-center gap-2 font-bold text-blue-900 mb-1">
-                <ShieldCheck className="w-4 h-4 text-blue-600" />
-                AI Extension
-              </div>
-              <p className="text-xs text-blue-800/80 font-medium mb-3 leading-tight">
-                Autofill applications using your secure vault.
-              </p>
-              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-bold text-sm py-2 rounded-xl transition-all">
-                Install Now
-              </button>
-            </div>
+
+
+          {/* More Menu */}
+          <div className="mt-2">
+            <MoreMenu />
           </div>
 
           {/* User Profile Footer */}
-          <div className="mt-2">
+          <div className="mt-1">
             <UserProfileDropdown />
           </div>
         </div>
+
+        <SettingsDialog
+          open={isSettingsOpen}
+          onOpenChange={setIsSettingsOpen}
+          onDeleteAccount={onDeleteAccount || (() => { })}
+        />
       </aside>
 
       {/* ======================= */}

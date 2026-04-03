@@ -2,9 +2,10 @@
 
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { DashboardTab, UserProfile } from '@/lib/types';
+import { DashboardTab, UserProfile, ActivitySummary } from '@/lib/types';
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 import { Sidebar } from '@/components/dashboard/Sidebar';
+import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { Home } from '@/components/dashboard/Home';
 import { Vault } from '@/components/dashboard/Vault';
 import { Profile } from '@/components/dashboard/Profile';
@@ -13,7 +14,7 @@ import { Pricing } from '@/components/dashboard/Pricing';
 import { Sharing } from '@/components/dashboard/Sharing';
 import { Button } from '@/components/ui/button';
 import { Shield, Sparkles, Loader2 } from 'lucide-react';
-import { authWithGoogleCode, deleteProfile, fetchProfile, saveProfile, syncMonthlySubscription } from '@/lib/api';
+import { authWithGoogleCode, deleteProfile, fetchActivitySessions, fetchProfile, saveProfile, syncMonthlySubscription } from '@/lib/api';
 import { isFirebaseConfigured } from '@/firebase/config';
 import LandingPage from '@/components/landing/LandingPage';
 
@@ -44,6 +45,7 @@ function AppContent() {
   const [profileEditIntent, setProfileEditIntent] = useState<'none' | 'founder'>('none');
   const [token, setToken] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [isGoogleClientReady, setIsGoogleClientReady] = useState(false);
   const codeClientRef = useRef<{ requestCode: () => void } | null>(null);
@@ -179,6 +181,26 @@ function AppContent() {
       cancelled = true;
     };
   }, [token]);
+
+  useEffect(() => {
+    if (!token || !profile) return;
+
+    let cancelled = false;
+    // Initial fetch of activity summary to sync credits in header/sidebar
+    fetchActivitySessions(token, { pageSize: 1 })
+      .then((res) => {
+        if (!cancelled) {
+          setActivitySummary(res.summary);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch activity summary', err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, profile]);
 
   useEffect(() => {
     if (hasAutoLoginTriggeredRef.current) return;
@@ -331,12 +353,20 @@ function AppContent() {
     <div className="flex min-h-screen bg-slate-50 w-full overflow-hidden">
       <Sidebar
         user={profile}
+        summary={activitySummary}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onLogout={handleLogout}
+        onDeleteAccount={handleDeleteAccount}
       />
 
-      <div className="flex-1 lg:ml-[280px] w-full min-w-0 flex flex-col min-h-screen pt-16 lg:pt-0">
+      <div className="flex-1 lg:ml-[280px] w-full min-w-0 flex flex-col min-h-screen pt-16">
+        <DashboardHeader 
+          user={profile}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          summary={activitySummary}
+        />
         <main className="flex-1 w-full max-w-[1600px] mx-auto p-4 md:p-8 lg:p-10">
         {activeTab === 'home' && <Home user={profile} />}
         {activeTab === 'activity' && (
@@ -344,6 +374,8 @@ function AppContent() {
             authToken={token}
             countryCode={profile.countryCode}
             user={profile}
+            summary={activitySummary}
+            onSummaryUpdate={setActivitySummary}
           />
         )}
         {activeTab === 'pricing' && (

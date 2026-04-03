@@ -155,22 +155,23 @@ export const Profile: React.FC<ProfileProps> = ({
   ];
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col items-center text-center space-y-6">
-        <Badge variant="outline" className="px-4 py-1.5 rounded-full bg-slate-50 text-primary border-slate-200 flex items-center gap-2">
-          <User className="w-3 h-3" /> Profile Settings
+    <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Header Section */}
+      <div className="flex flex-col items-center text-center space-y-8 bg-gradient-to-b from-blue-50/50 to-transparent pb-8 rounded-b-[4rem]">
+        <Badge variant="outline" className="px-5 py-2 rounded-full bg-white/80 backdrop-blur-sm text-[#2F56C0] border-blue-100/50 flex items-center gap-2.5 shadow-sm font-bold text-xs">
+          <User className="w-3.5 h-3.5" /> Identity & Profile
         </Badge>
 
-        <div className="space-y-2">
-          <h1 className="text-5xl font-black text-primary tracking-tighter">
-            My <span className="text-[#2F56C0]">Profile</span>
+        <div className="space-y-3">
+          <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight leading-tight">
+            My <span className="bg-gradient-to-r from-[#1E3A8A] to-[#2F56C0] bg-clip-text text-transparent">Profile</span>
           </h1>
-          <p className="text-muted-foreground font-medium text-lg">
-            Manage your personal, market, and founder information
+          <p className="text-slate-500 font-semibold text-lg max-w-2xl mx-auto leading-relaxed px-4">
+            Manage your personal global identity, market preferences, and professional roles in one secure vault.
           </p>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 pt-4">
           <Button
             onClick={() => {
               setEditedUser({
@@ -180,38 +181,38 @@ export const Profile: React.FC<ProfileProps> = ({
               });
               setIsEditing(true);
             }}
-            className="h-12 px-8 rounded-2xl text-lg font-bold shadow-xl shadow-primary/20 flex items-center gap-3 transition-transform hover:scale-105"
+            className="h-14 px-10 rounded-2xl text-lg font-black bg-[#2F56C0] hover:bg-blue-700 shadow-xl shadow-blue-200 border-b-4 border-blue-800 transition-all hover:-translate-y-0.5 active:translate-y-0 active:border-b-0 flex items-center gap-3"
           >
-            <Edit3 className="w-5 h-5" /> Edit Profile
+            <Edit3 className="w-6 h-6" /> Edit Profile
           </Button>
 
           <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <DialogTrigger asChild>
               <Button
                 variant="outline"
-                className="h-12 px-6 rounded-2xl text-lg font-bold border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-2"
+                className="h-14 px-8 rounded-2xl text-lg font-bold border-slate-200 bg-white/50 backdrop-blur-sm text-slate-600 hover:bg-white hover:border-slate-300 shadow-sm transition-all flex items-center gap-2.5"
               >
-                <Settings className="w-5 h-5" /> Settings
+                <Settings className="w-6 h-6" /> Settings
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md p-6 rounded-2xl">
+            <DialogContent className="max-w-md p-6 rounded-[2rem] border-none shadow-2xl bg-white/95 backdrop-blur-md">
               <DialogHeader>
-                <DialogTitle className="text-xl font-bold">Profile Settings</DialogTitle>
-                <DialogDescription>
-                  Manage your account preferences and data.
+                <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Profile Settings</DialogTitle>
+                <DialogDescription className="font-semibold text-slate-500">
+                  Manage your account preferences and secure data.
                 </DialogDescription>
               </DialogHeader>
-              <div className="pt-4 space-y-4">
-                <div className="p-4 rounded-xl bg-red-50 border border-red-100 space-y-3">
-                  <div className="flex items-center gap-2 text-red-700 font-bold">
+              <div className="pt-6 space-y-4">
+                <div className="p-6 rounded-3xl bg-rose-50/50 border border-rose-100/50 space-y-4">
+                  <div className="flex items-center gap-2 text-rose-700 font-black uppercase text-[11px] tracking-widest">
                     <Trash2 className="w-4 h-4" /> Danger Zone
                   </div>
-                  <p className="text-xs text-red-600/80 leading-relaxed">
-                    Permanently delete your account and all associated data. This action cannot be undone.
+                  <p className="text-[13px] text-rose-600/80 font-medium leading-relaxed">
+                    Permanently delete your account and all associated data. This action cannot be reversed.
                   </p>
                   <Button
                     variant="destructive"
-                    className="w-full font-bold"
+                    className="w-full h-12 rounded-xl font-bold bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-200"
                     onClick={() => {
                       const confirmed = window.confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.');
                       if (confirmed) {
@@ -229,13 +230,14 @@ export const Profile: React.FC<ProfileProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1 space-y-8">
-          <Card className="p-8 relative overflow-hidden group dashboard-card">
-            <div className="absolute top-0 left-0 w-full h-1 bg-[#2F56C0]" />
-            <div className="flex flex-col items-center text-center space-y-6">
-              <div className="relative">
-                <div className="w-32 h-32 bg-primary rounded-[3rem] flex items-center justify-center text-5xl font-black text-white shadow-2xl overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 px-4 lg:px-0">
+        {/* Left Column: Identity Card */}
+        <div className="lg:col-span-4 space-y-8">
+          <Card className="p-10 relative overflow-hidden bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl shadow-blue-500/5 rounded-[3rem] group">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-600 to-indigo-600" />
+            <div className="flex flex-col items-center text-center space-y-8">
+              <div className="relative p-1 bg-gradient-to-br from-blue-100 to-indigo-50 rounded-[3.5rem] shadow-inner">
+                <div className="w-40 h-40 bg-[#2F56C0] rounded-[3.2rem] flex items-center justify-center text-6xl font-black text-white shadow-2xl overflow-hidden border-4 border-white">
                   {user.avatarUrl && !avatarLoadFailed ? (
                     <img
                       src={user.avatarUrl}
@@ -248,44 +250,83 @@ export const Profile: React.FC<ProfileProps> = ({
                     user.firstName?.[0] || user.fullName?.[0]
                   )}
                 </div>
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-white flex items-center justify-center">
-                  <ShieldCheck className="w-4 h-4 text-white" />
+                <div className="absolute -top-1 -right-1 w-10 h-10 bg-green-500 rounded-full border-4 border-white flex items-center justify-center shadow-lg">
+                  <ShieldCheck className="w-5 h-5 text-white" />
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <h2 className="text-2xl font-black text-primary">{user.fullName}</h2>
-                <p className="text-muted-foreground font-medium">{user.email}</p>
+              <div className="space-y-2">
+                <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-none">{user.fullName}</h2>
+                <p className="text-slate-500 font-semibold text-base">{user.email}</p>
               </div>
 
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <Badge className="bg-blue-50 text-blue-700 border border-blue-100">
-                  {user.marketSegment === 'global_founder' ? 'Global Founder' : 'India'}
+              <div className="flex flex-wrap items-center justify-center gap-2.5">
+                <Badge className="bg-blue-50 text-blue-700 border border-blue-100/50 font-bold px-3 py-1.5 rounded-xl uppercase text-[10px] tracking-wider">
+                  {user.marketSegment === 'global_founder' ? 'Global Founder' : 'India Market'}
                 </Badge>
-                <Badge className="bg-slate-100 text-primary border border-slate-200">
+                <Badge className="bg-slate-50 text-slate-700 border border-slate-200 font-bold px-3 py-1.5 rounded-xl uppercase text-[10px] tracking-wider">
                   {getCountryLabel(user.countryCode)}
                 </Badge>
               </div>
 
-              <div className="px-4 py-2 bg-green-50 text-green-700 text-xs font-bold uppercase rounded-xl flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                Signed in with Google
+              <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent" />
+
+              <div className="px-5 py-2.5 bg-green-50/50 text-green-700 text-xs font-black uppercase rounded-2xl flex items-center gap-3 border border-green-100/50 shadow-sm">
+                <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+                Verified Google Identity
               </div>
             </div>
           </Card>
 
-          <Card className="p-8 space-y-6 dashboard-card">
-            <h4 className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Core Stats</h4>
-            <div className="space-y-4">
+          <Card className="p-8 space-y-6 bg-white/60 backdrop-blur-lg border border-white/40 shadow-sm rounded-[2.5rem]">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em]">Profile Stats</h4>
+              <div className="w-8 h-1 bg-blue-100 rounded-full" />
+            </div>
+            <div className="space-y-5">
               <StatItem label="Verified Documents" value={Object.keys(user.documents).length} />
-              <StatItem label="Co-Founders" value={user.coFounders?.length || 0} />
-              <StatItem label="Account Type" value={isGlobalFounder ? 'Global Founder' : 'Identity Vault Free'} />
+              <StatItem label="Co-Founders Team" value={user.coFounders?.length || 0} />
+              <StatItem label="Membership Tier" value={isGlobalFounder ? 'Elite Founder' : 'Identity Vault'} isHeighlight />
             </div>
           </Card>
+
+          {isFounder && (
+            <DetailSection title="Founder & Startup" icon={<Building2 className="w-5 h-5 text-emerald-600" />}>
+              <DetailItem label="Founder LinkedIn" value={user.linkedInProfile} />
+              <DetailItem label="Founder Education" value={user.education} />
+              <DetailItem label="Work Experience" value={user.workExperience} />
+              <DetailItem label="Role In Startup" value={user.startupRole} />
+              <DetailItem label="Startup Name" value={user.startupName} />
+              <DetailItem label="Startup Website" value={user.startupWebsite} />
+              <DetailItem label="Startup LinkedIn" value={user.startupLinkedInProfile} />
+              <DetailItem label="Industry / Sector" value={user.industry} />
+              <DetailItem label="Stage" value={user.startupStage} />
+              <DetailItem label="Date of Incorporation" value={user.incorporationDate} />
+              <DetailItem label="Company Type" value={user.companyType} />
+
+              <div className="space-y-2 pt-2">
+                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Co-Founders</span>
+                {(user.coFounders || []).length === 0 ? (
+                  <div className="text-sm font-medium text-muted-foreground">No co-founders added yet</div>
+                ) : (
+                  <div className="space-y-3">
+                    {(user.coFounders || []).map((coFounder, index) => (
+                      <div key={index} className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
+                        <div className="font-semibold text-primary">{coFounder.fullName || `Co-Founder ${index + 1}`}</div>
+                        <div className="text-sm text-slate-600">{coFounder.email || 'No email added'}</div>
+                        <div className="text-sm text-slate-600">{coFounder.startupRole || 'No role added'}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </DetailSection>
+          )}
         </div>
 
-        <div className="lg:col-span-2 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Right Column: Detailed Sections */}
+        <div className="lg:col-span-8 space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
             <DetailSection title="Basic Contact" icon={<Mail className="w-5 h-5 text-[#2F56C0]" />}>
               <DetailItem label="Full Name" value={`${user.firstName || ''} ${user.middleName || ''} ${user.lastName || ''}`.trim() || user.fullName} />
               <DetailItem label="Email" value={user.email} />
@@ -338,66 +379,35 @@ export const Profile: React.FC<ProfileProps> = ({
               </DetailSection>
             )}
 
-            {isFounder && (
-              <DetailSection title="Founder & Startup" icon={<Building2 className="w-5 h-5 text-emerald-600" />}>
-                <DetailItem label="Founder LinkedIn" value={user.linkedInProfile} />
-                <DetailItem label="Founder Education" value={user.education} />
-                <DetailItem label="Work Experience" value={user.workExperience} />
-                <DetailItem label="Role In Startup" value={user.startupRole} />
-                <DetailItem label="Startup Name" value={user.startupName} />
-                <DetailItem label="Startup Website" value={user.startupWebsite} />
-                <DetailItem label="Startup LinkedIn" value={user.startupLinkedInProfile} />
-                <DetailItem label="Industry / Sector" value={user.industry} />
-                <DetailItem label="Stage" value={user.startupStage} />
-                <DetailItem label="Date of Incorporation" value={user.incorporationDate} />
-                <DetailItem label="Company Type" value={user.companyType} />
+            {!isGlobalFounder && (
+              <div className="md:col-span-2">
+                <DetailSection title="Personal Documents" icon={<FileCheck2 className="w-5 h-5 text-[#2F56C0]" />}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
+                    {personalDocuments.map((doc) => {
+                      const matchedDoc = doc.keys.map((key) => user.documents?.[key]).find(Boolean);
+                      const isUploaded = Boolean(matchedDoc?.fileUrl);
 
-                <div className="space-y-2 pt-2">
-                  <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Co-Founders</span>
-                  {(user.coFounders || []).length === 0 ? (
-                    <div className="text-sm font-medium text-muted-foreground">No co-founders added yet</div>
-                  ) : (
-                    <div className="space-y-3">
-                      {(user.coFounders || []).map((coFounder, index) => (
-                        <div key={index} className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
-                          <div className="font-semibold text-primary">{coFounder.fullName || `Co-Founder ${index + 1}`}</div>
-                          <div className="text-sm text-slate-600">{coFounder.email || 'No email added'}</div>
-                          <div className="text-sm text-slate-600">{coFounder.startupRole || 'No role added'}</div>
+                      return (
+                        <div
+                          key={doc.label}
+                          className={`flex items-center justify-between px-4 py-3.5 rounded-2xl border text-[13px] font-bold transition-all ${isUploaded
+                              ? 'bg-emerald-50/50 border-emerald-200/50 text-emerald-700 shadow-sm'
+                              : 'bg-slate-50 border-slate-200 text-slate-500'
+                            }`}
+                        >
+                          <span className="truncate mr-3">{doc.label}</span>
+                          <span className="inline-flex items-center gap-1.5 shrink-0 text-[10px] tracking-wider">
+                            {isUploaded && <FileCheck2 className="w-3.5 h-3.5" />}
+                            {isUploaded ? 'UPLOADED' : 'PENDING'}
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </DetailSection>
+                      );
+                    })}
+                  </div>
+                </DetailSection>
+              </div>
             )}
           </div>
-
-          {!isGlobalFounder && (
-            <DetailSection title="Personal Documents" icon={<FileCheck2 className="w-5 h-5 text-[#2F56C0]" />}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {personalDocuments.map((doc) => {
-                  const matchedDoc = doc.keys.map((key) => user.documents?.[key]).find(Boolean);
-                  const isUploaded = Boolean(matchedDoc?.fileUrl);
-
-                  return (
-                    <div
-                      key={doc.label}
-                      className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs font-semibold ${isUploaded
-                          ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                          : 'bg-slate-50 border-slate-200 text-slate-500'
-                        }`}
-                    >
-                      <span>{doc.label}</span>
-                      <span className="inline-flex items-center gap-1">
-                        {isUploaded && <FileCheck2 className="w-3 h-3" />}
-                        {isUploaded ? 'Uploaded' : 'Pending'}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </DetailSection>
-          )}
         </div>
       </div>
 
@@ -741,12 +751,19 @@ export const Profile: React.FC<ProfileProps> = ({
             )}
           </div>
 
-          <div className="p-8 border-t bg-white flex justify-end gap-4 sticky bottom-0">
-            <Button variant="outline" onClick={() => setIsEditing(false)} className="h-12 px-8 rounded-xl font-bold">
+          <div className="p-8 border-t bg-white/80 backdrop-blur-lg flex justify-end gap-4 sticky bottom-0 z-20 rounded-b-[2.5rem]">
+            <Button 
+                variant="outline" 
+                onClick={() => setIsEditing(false)} 
+                className="h-14 px-8 rounded-2xl font-bold border-slate-200 hover:bg-slate-50 transition-all"
+            >
               Cancel
             </Button>
-            <Button onClick={handleSave} className="h-12 px-8 rounded-xl font-bold gap-2 shadow-lg shadow-[#2F56C0]/30">
-              <Save className="w-4 h-4" /> Save Changes
+            <Button 
+                onClick={handleSave} 
+                className="h-14 px-10 rounded-2xl font-black bg-[#2F56C0] hover:bg-blue-700 shadow-xl shadow-blue-100 border-b-4 border-blue-800 transition-all active:translate-y-1 active:border-b-0 flex items-center gap-2.5"
+            >
+              <Save className="w-5 h-5" /> Save Changes
             </Button>
           </div>
         </DialogContent>
@@ -755,27 +772,35 @@ export const Profile: React.FC<ProfileProps> = ({
   );
 };
 
-const StatItem = ({ label, value }: { label: string; value: string | number }) => (
-  <div className="flex items-center justify-between">
-    <span className="text-sm font-medium text-muted-foreground">{label}</span>
-    <span className="text-sm font-black text-primary">{value}</span>
+const StatItem = ({ label, value, isHeighlight = false }: { label: string; value: string | number; isHeighlight?: boolean }) => (
+  <div className="flex items-center justify-between group/stat">
+    <span className="text-[13px] font-semibold text-slate-500 group-hover/stat:text-slate-900 transition-colors">{label}</span>
+    <span className={`text-[13px] font-black uppercase tracking-tight ${isHeighlight ? 'text-[#2F56C0] bg-blue-50 px-2.5 py-1 rounded-lg' : 'text-slate-800'}`}>{value}</span>
   </div>
 );
 
 const DetailSection = ({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) => (
-  <Card className="p-8 space-y-6 dashboard-card">
-    <h3 className="text-lg font-black text-primary flex items-center gap-2">
-      {icon} {title}
-    </h3>
-    <div className="space-y-4">
+  <Card className="p-8 space-y-6 bg-white/70 backdrop-blur-md border border-white/50 shadow-sm rounded-[2.5rem] hover:shadow-md transition-shadow">
+    <div className="flex items-center gap-3.5 border-b border-slate-100 pb-4">
+      <div className="w-10 h-10 rounded-2xl bg-white shadow-sm flex items-center justify-center border border-slate-100">
+        {icon}
+      </div>
+      <h3 className="text-xl font-black text-slate-800 tracking-tight">
+        {title}
+      </h3>
+    </div>
+    <div className="space-y-5 px-1">
       {children}
     </div>
   </Card>
 );
 
 const DetailItem = ({ label, value }: { label: string; value?: string }) => (
-  <div className="space-y-1">
-    <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{label}</span>
-    <div className="text-sm font-bold text-primary break-words">{value || 'Not provided'}</div>
+  <div className="space-y-1.5 group/item">
+    <div className="flex items-center gap-2">
+      <div className="w-1 h-1 bg-blue-400 rounded-full opacity-50 group-hover/item:opacity-100 transition-opacity" />
+      <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest leading-none translate-y-[0.5px]">{label}</span>
+    </div>
+    <div className="text-[15px] font-bold text-slate-800 pl-3 leading-relaxed break-words">{value || 'Pending Setup'}</div>
   </div>
 );
