@@ -56,6 +56,7 @@ type DocumentExtractionResult = {
     thoughtsTokens?: number;
     cachedContentTokens?: number;
   };
+  aiFileUri?: string;
 };
 
 type RazorpayPaymentEntity = {
@@ -113,15 +114,32 @@ async function runDocumentExtraction(
   fileUrl: string,
   docType: string,
   mimeType: string = 'application/pdf',
-  requestId?: string
+  requestId?: string,
+  isDeveloper: boolean = false
 ): Promise<DocumentExtractionResult> {
   try {
     const fileUri = await uploadFileToGemini(fileUrl, mimeType);
+
+    if (!isDeveloper) {
+      logInfo('AI extraction disabled for regular user, skipping extraction', { requestId, docType });
+      return {
+        extractedData: {
+          aiFileUrl: fileUri,
+          ai_extraction_disabled: true,
+        },
+        aiFileUri: fileUri,
+      };
+    }
+
     const ai = await import('./ai/flows/extract-data-from-document.js');
     const result = await ai.extractDataFromDocument({ fileUri, docType, mimeType });
     return {
-      extractedData: result.extractedData || {},
+      extractedData: {
+        ...(result.extractedData || {}),
+        aiFileUrl: fileUri,
+      },
       usage: result.usage,
+      aiFileUri: fileUri,
     };
   } catch (error) {
     logWarn('AI extraction unavailable, storing fallback payload', { requestId, error });
@@ -1453,8 +1471,10 @@ const server = createServer(async (req, res) => {
         return;
       }
 
+      const isDeveloper = current.email === 'jithusoe@gmail.com' || current.email === 'sabapplierai100m@gmail.com' || current.email === 'palanirudh82994@gmail.com';
+
       try {
-        const extraction = await runDocumentExtraction(fileUrl, docType, mimeType || 'application/pdf', requestId);
+        const extraction = await runDocumentExtraction(fileUrl, docType, mimeType || 'application/pdf', requestId, isDeveloper);
         const extractedData = extraction.extractedData;
         const now = new Date().toISOString();
         const inputTokens = Math.max(0, Number(extraction.usage?.inputTokens) || 0);

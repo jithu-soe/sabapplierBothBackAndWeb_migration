@@ -38,6 +38,12 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({ onLogin, onSignup }) => {
     }, []);
 
     const scrollToSection = (sectionId: string) => {
+        if (sectionId === 'pricing') {
+            router.push('/pricing');
+            setIsMenuOpen(false);
+            return;
+        }
+
         if (pathname !== '/') {
             router.push(`/#${sectionId}`);
             setIsMenuOpen(false);
@@ -104,6 +110,13 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({ onLogin, onSignup }) => {
                             Reviews
                             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#d2ddff] transition-all duration-300 group-hover:w-full"></span>
                         </button>
+                        <Link
+                            href="/pricing"
+                            className="text-white/90 hover:text-[#d2ddff] font-medium transition-all duration-300 hover:scale-105 relative group"
+                        >
+                            Pricing
+                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#d2ddff] transition-all duration-300 group-hover:w-full"></span>
+                        </Link>
                         {/* Support Dropdown */}
                         <div className="relative" ref={supportRef}>
                             <button
@@ -115,7 +128,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({ onLogin, onSignup }) => {
                                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#d2ddff] transition-all duration-300 group-hover:w-full"></span>
                             </button>
                             {isSupportOpen && (
-                                <div className="absolute top-[calc(100%+12px)] left-1/2 -translate-x-1/2 z-[9999]" style={{filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.5))'}}>
+                                <div className="absolute top-[calc(100%+12px)] left-1/2 -translate-x-1/2 z-[9999]" style={{ filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.5))' }}>
                                     {/* Caret */}
                                     <div className="flex justify-center mb-0">
                                         <div className="w-3 h-3 bg-[#1a2540] border-t border-l border-white/20 rotate-45 translate-y-1/2 relative z-10"></div>
@@ -247,6 +260,13 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({ onLogin, onSignup }) => {
                             >
                                 Reviews
                             </button>
+                            <Link
+                                href="/pricing"
+                                onClick={() => setIsMenuOpen(false)}
+                                className="block text-white/90 hover:text-[#d2ddff] font-medium py-2 transition-colors duration-300 w-full text-left"
+                            >
+                                Pricing
+                            </Link>
                             {/* Mobile Support Links */}
                             <div className="border-t border-white/10 pt-2">
                                 <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-2">Support</p>

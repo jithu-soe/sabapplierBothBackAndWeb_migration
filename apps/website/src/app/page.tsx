@@ -17,26 +17,11 @@ import { Shield, Sparkles, Loader2 } from 'lucide-react';
 import { authWithGoogleCode, deleteProfile, fetchActivitySessions, fetchProfile, saveProfile, syncMonthlySubscription } from '@/lib/api';
 import { isFirebaseConfigured } from '@/firebase/config';
 import LandingPage from '@/components/landing/LandingPage';
+import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 
 const TOKEN_KEY = 'sabapplier_token';
-const GOOGLE_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
 
-declare global {
-  interface Window {
-    google?: {
-      accounts?: {
-        oauth2?: {
-          initCodeClient: (config: {
-            client_id: string;
-            scope: string;
-            ux_mode: 'popup';
-            callback: (response: { code?: string; error?: string }) => void;
-          }) => { requestCode: () => void };
-        };
-      };
-    };
-  }
-}
+
 
 function AppContent() {
   const router = useRouter();
@@ -47,63 +32,34 @@ function AppContent() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [activitySummary, setActivitySummary] = useState<ActivitySummary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isGoogleClientReady, setIsGoogleClientReady] = useState(false);
-  const codeClientRef = useRef<{ requestCode: () => void } | null>(null);
-  const hasAutoLoginTriggeredRef = useRef(false);
-  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const { isReady, showPopup } = useGoogleAuth({
+    onSuccess: async (code) => {
+      try {
+        // Show loading spinner while backend authenticates the code
+        setLoading(true);
+        
+        const authResult = await authWithGoogleCode(code);
+        localStorage.setItem(TOKEN_KEY, authResult.token);
 
-  useEffect(() => {
-    if (!googleClientId) return;
+        // Sync with SabApplier Extension
+        localStorage.setItem('sabapplier_extension_jwt', authResult.token);
+        localStorage.setItem('sabapplier_extension_user', JSON.stringify(authResult.user));
+        localStorage.setItem('sabapplier_extension_sync_timestamp', Date.now().toString());
 
-    const initialize = () => {
-      if (!window.google?.accounts?.oauth2) return;
-      codeClientRef.current = window.google.accounts.oauth2.initCodeClient({
-        client_id: googleClientId,
-        scope: 'openid email profile',
-        ux_mode: 'popup',
-        callback: async (response) => {
-          try {
-            if (response.error || !response.code) {
-              throw new Error(response.error || 'Google authorization failed');
-            }
-            
-            // Show loading spinner while backend authenticates the code
-            setLoading(true);
-            
-            const authResult = await authWithGoogleCode(response.code);
-            localStorage.setItem(TOKEN_KEY, authResult.token);
-
-            // Sync with SabApplier Extension
-            localStorage.setItem('sabapplier_extension_jwt', authResult.token);
-            localStorage.setItem('sabapplier_extension_user', JSON.stringify(authResult.user));
-            localStorage.setItem('sabapplier_extension_sync_timestamp', Date.now().toString());
-
-            setToken(authResult.token);
-            setProfile(authResult.user);
-          } catch (error) {
-            console.error('Login failed', error);
-            setLoading(false);
-          }
-        },
-      });
-      setIsGoogleClientReady(true);
-    };
-
-    if (window.google?.accounts?.oauth2) {
-      initialize();
-      return;
+        setToken(authResult.token);
+        setProfile(authResult.user);
+      } catch (error) {
+        console.error('Login failed', error);
+        setLoading(false);
+      }
+    },
+    onError: (error) => {
+      console.error('Google authorization failed', error);
+      setLoading(false);
     }
+  });
 
-    const script = document.createElement('script');
-    script.src = GOOGLE_SCRIPT_SRC;
-    script.async = true;
-    script.defer = true;
-    script.onload = initialize;
-    document.head.appendChild(script);
-    return () => {
-      script.onload = null;
-    };
-  }, [googleClientId]);
+  const hasAutoLoginTriggeredRef = useRef(false);
 
   useEffect(() => {
     const stored = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
@@ -205,26 +161,26 @@ function AppContent() {
   useEffect(() => {
     if (hasAutoLoginTriggeredRef.current) return;
     if (loading || token || profile) return;
-    if (!isGoogleClientReady || !codeClientRef.current) return;
+    if (!isReady) return;
 
     const authParam = searchParams.get('auth');
     if (authParam !== 'google') return;
 
     hasAutoLoginTriggeredRef.current = true;
-    codeClientRef.current.requestCode();
-  }, [isGoogleClientReady, loading, profile, searchParams, token]);
+    showPopup();
+  }, [isReady, loading, profile, searchParams, token, showPopup]);
 
   const handleLogin = () => {
-    if (codeClientRef.current) {
-      codeClientRef.current.requestCode();
+    if (isReady) {
+      showPopup();
     } else {
       router.push('/signin');
     }
   };
 
   const handleSignup = () => {
-    if (codeClientRef.current) {
-      codeClientRef.current.requestCode();
+    if (isReady) {
+      showPopup();
     } else {
       router.push('/signup');
     }

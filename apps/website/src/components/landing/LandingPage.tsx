@@ -8,6 +8,7 @@ import HowItWorks from './HowItWorks';
 import TargetAudience from './TargetAudience';
 import Testimonials from './Testimonials';
 import Privacy from './Privacy';
+import LandingPricing from './LandingPricing';
 import CTA from './CTA';
 import Footer from './Footer';
 
